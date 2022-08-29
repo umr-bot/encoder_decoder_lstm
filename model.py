@@ -80,11 +80,13 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     encoder_lstm = LSTM(hidden_size, recurrent_dropout=0.2,
                         return_sequences=True, return_state=False,
                         name='encoder_lstm_1')
+    # here encoder outputs contains three things:{(all h states),(last h state),(last c state)}
     encoder_outputs = encoder_lstm(encoder_inputs)
     
     encoder_lstm = LSTM(hidden_size, recurrent_dropout=0.2,
                         return_sequences=False, return_state=True,
                         name='encoder_lstm_2')
+    # here encoder outputs contains all state_h 's including the returned one
     encoder_outputs, state_h, state_c = encoder_lstm(encoder_outputs)
     # We discard `encoder_outputs` and only keep the states.
     encoder_states = [state_h, state_c]
@@ -112,19 +114,25 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     model.compile(optimizer='adam', loss='categorical_crossentropy',
                 metrics=['accuracy', recall, f1_score])
                   #metrics=['accuracy', truncated_acc, truncated_loss, recall, precision, f1_score])
-
+    ################################################################################### 
+    # The encoder_model and decoder_models defined below are used when evaluating/using model
     # Define the encoder model separately.
     encoder_model = Model(inputs=encoder_inputs, outputs=encoder_states)
-
+    ####################################################################
     # Define the decoder model separately.
     decoder_state_input_h = Input(shape=(hidden_size,))
     decoder_state_input_c = Input(shape=(hidden_size,))
+    #decoder_state_input_h, decoder_state_input_c comes from encoder lstm layer 2 output
     decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
+    
+    # only initial state uses encoder lstm layer 2 outputs
     decoder_outputs, state_h, state_c = decoder_lstm(
         decoder_inputs, initial_state=decoder_states_inputs)
     decoder_states = [state_h, state_c]
     decoder_outputs = decoder_softmax(decoder_outputs)
+    
+    # total inputs to decoder = decoder_inputs + encoder_lstm_layer_2_outputs
     decoder_model = Model(inputs=[decoder_inputs] + decoder_states_inputs,
                           outputs=[decoder_outputs] + decoder_states)
-
+    #####################################################################################
     return model, encoder_model, decoder_model
