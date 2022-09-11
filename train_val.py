@@ -26,12 +26,12 @@ sample_mode = 'argmax'
 # https://arxiv.org/abs/1409.3215
 reverse = True
 
-data_path = './data'
+#data_path = './data'
 #train_books = ['nietzsche.txt', 'pride_and_prejudice.txt',
 #               'shakespeare.txt', 'war_and_peace.txt']
 #val_books = ['wonderland.txt']
-train_books = ['folds/fold1','folds/fold2','folds/fold3']
-val_books   = ['folds/fold4'] 
+#train_books = ['folds/fold1','folds/fold2','folds/fold3']
+#val_books   = ['folds/fold4'] 
 
 #if __name__ == '__main__':
 # Prepare training data.
@@ -73,11 +73,11 @@ val_books   = ['folds/fold4']
 ##print('Max sequence length in the validation set:', val_maxlen)
 
 # extract training tokens
-with open("data/folds/train") as f: train_tokens = [tok for line in f for tok in line.split()]
-with open("data/norm_folds/train") as f: train_dec_tokens = [tok for line in f for tok in line.split()]
+with open("eng_data/kfolds/folds/train") as f: train_tokens = [tok for line in f for tok in line.split()]
+with open("eng_data/kfolds/norm_folds/train") as f: train_dec_tokens = [tok for line in f for tok in line.split()]
 # extract validation tokens
-with open("data/folds/fold4") as f: val_tokens = [tok for line in f for tok in line.split()]
-with open("data/norm_folds/fold4") as f: val_dec_tokens = [tok for line in f for tok in line.split()]
+with open("eng_data/kfolds/folds/fold5") as f: val_tokens = [tok for line in f for tok in line.split()]
+with open("eng_data/kfolds/norm_folds/fold5") as f: val_dec_tokens = [tok for line in f for tok in line.split()]
 input_chars = set(' '.join(train_tokens) + '*' + '\t') # * and \t are EOS and SOS respectively
 target_chars = set(' '.join(train_dec_tokens) + '*' + '\t')
 nb_input_chars = len(input_chars)
@@ -88,6 +88,8 @@ target_ctable = CharacterTable(target_chars)
 
 train_steps = len(train_tokens) // train_batch_size
 val_steps = len(val_tokens) // val_batch_size
+print("Number of train_steps:",train_steps)
+print("Number of val_steps:",val_steps)
 
 # Compile the model.
 model, encoder_model, decoder_model = seq2seq(
@@ -97,15 +99,15 @@ print(model.summary())
 maxlen = max([len(token) for token in train_tokens]) + 2
 
 # Train and evaluate.
-for epoch in range(100):
+for epoch in range(30):
     print('Main Epoch {:d}/{:d}'.format(epoch + 1, nb_epochs))
 
     #train_encoder, train_decoder, train_target = transform(
     #    vocab, maxlen, error_rate=error_rate, shuffle=True)
     # note shuffle false to keep train_tokens and train_dec_tokens in line
     s_ind,e_ind = int(len(train_tokens) * (epoch/100)), int(len(train_tokens)*((epoch+1)/100))
-    train_encoder, train_decoder, train_target = transform2( train_tokens[s_ind:e_ind], maxlen, error_rate=error_rate, shuffle=False, dec_tokens=train_dec_tokens[s_ind:e_ind])
-    val_encoder, val_decoder, val_target = transform2( val_tokens[s_ind:e_ind], maxlen, error_rate=error_rate, shuffle=False, dec_tokens=val_dec_tokens[s_ind:e_ind])
+    train_encoder, train_decoder, train_target = transform2( train_tokens[s_ind:e_ind], maxlen, shuffle=False, dec_tokens=train_dec_tokens[s_ind:e_ind])
+    val_encoder, val_decoder, val_target = transform2( val_tokens[s_ind:e_ind], maxlen, shuffle=False, dec_tokens=val_dec_tokens[s_ind:e_ind])
 
 
     # write out train tokens

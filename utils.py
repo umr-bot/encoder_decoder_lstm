@@ -173,7 +173,7 @@ def transform(tokens, maxlen, error_rate=0.3, shuffle=True):
 
     return encoder_tokens, decoder_tokens, target_tokens
 
-def transform2(tokens, maxlen, error_rate=0.3, shuffle=True, dec_tokens=[]):
+def transform2(tokens, maxlen, shuffle=True, dec_tokens=[]):
     """Transform tokens into model inputs and targets.
     All inputs and targets are padded to maxlen with EOS character.
     """

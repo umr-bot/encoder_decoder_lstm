@@ -72,6 +72,9 @@ def f1_score(y_true, y_pred):
 def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     """Adapted from:
     https://github.com/keras-team/keras/blob/master/examples/lstm_seq2seq.py
+    hidden_size: Number of memory cells in encoder and decoder models
+    nb_input_chars: number of input sequences, in train_val.py 's case, chars
+    nb_target_chars number of output sequences, in train_val.py, it is chars
     """
     
     # Define the main model consisting of encoder and decoder.
