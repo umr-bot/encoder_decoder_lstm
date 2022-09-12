@@ -98,14 +98,14 @@ print("Number of val_steps:",val_steps)
 
 # Compile the model.
 #model, encoder_model, decoder_model = seq2seq(hidden_size, nb_input_chars, nb_target_chars)
-model_cnt=4
+model_cnt=26
 model, encoder_model, decoder_model = restore_model("checkpoints/seq2seq_epoch_"+str(model_cnt)+".h5",hidden_size)
 print(model.summary())
 
 maxlen = max([len(token) for token in train_tokens]) + 2
 
 # Train and evaluate.
-for epoch in range(model_cnt,30-model_cnt):
+for epoch in range(model_cnt,50):
     print('Main Epoch {:d}/{:d}'.format(epoch + 1, nb_epochs))
 
     #train_encoder, train_decoder, train_target = transform(
