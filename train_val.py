@@ -7,9 +7,10 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from utils import CharacterTable, transform
 from utils import batch, datagen, decode_sequences
 from utils import read_text, tokenize
+from utils import restore_model
 from model import seq2seq
 
-from utils import transform2
+from utils import transform2, get_type_lists
 
 error_rate = 0.8
 hidden_size = 512
@@ -75,6 +76,10 @@ reverse = True
 # extract training tokens
 with open("eng_data/kfolds/folds/train") as f: train_tokens = [tok for line in f for tok in line.split()]
 with open("eng_data/kfolds/norm_folds/train") as f: train_dec_tokens = [tok for line in f for tok in line.split()]
+
+# Convert train word token lists to type lists
+train_tokens,train_dec_tokens = get_type_lists(train_tokens,train_dec_tokens)
+
 # extract validation tokens
 with open("eng_data/kfolds/folds/fold5") as f: val_tokens = [tok for line in f for tok in line.split()]
 with open("eng_data/kfolds/norm_folds/fold5") as f: val_dec_tokens = [tok for line in f for tok in line.split()]
@@ -92,14 +97,15 @@ print("Number of train_steps:",train_steps)
 print("Number of val_steps:",val_steps)
 
 # Compile the model.
-model, encoder_model, decoder_model = seq2seq(
-    hidden_size, nb_input_chars, nb_target_chars)
+#model, encoder_model, decoder_model = seq2seq(hidden_size, nb_input_chars, nb_target_chars)
+model_cnt=4
+model, encoder_model, decoder_model = restore_model("checkpoints/seq2seq_epoch_"+str(model_cnt)+".h5",hidden_size)
 print(model.summary())
 
 maxlen = max([len(token) for token in train_tokens]) + 2
 
 # Train and evaluate.
-for epoch in range(30):
+for epoch in range(model_cnt,30-model_cnt):
     print('Main Epoch {:d}/{:d}'.format(epoch + 1, nb_epochs))
 
     #train_encoder, train_decoder, train_target = transform(
