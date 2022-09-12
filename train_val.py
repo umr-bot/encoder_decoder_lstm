@@ -12,8 +12,8 @@ from model import seq2seq
 
 from utils import transform2, get_type_lists
 
-error_rate = 0.8
-hidden_size = 512
+#error_rate = 0.8
+hidden_size = 256
 nb_epochs = 100
 train_batch_size = 128
 val_batch_size = 256
@@ -81,8 +81,8 @@ with open("eng_data/kfolds/norm_folds/train") as f: train_dec_tokens = [tok for 
 train_tokens,train_dec_tokens = get_type_lists(train_tokens,train_dec_tokens)
 
 # extract validation tokens
-with open("eng_data/kfolds/folds/fold5") as f: val_tokens = [tok for line in f for tok in line.split()]
-with open("eng_data/kfolds/norm_folds/fold5") as f: val_dec_tokens = [tok for line in f for tok in line.split()]
+with open("eng_data/kfolds/folds/fold4") as f: val_tokens = [tok for line in f for tok in line.split()]
+with open("eng_data/kfolds/norm_folds/fold4") as f: val_dec_tokens = [tok for line in f for tok in line.split()]
 input_chars = set(' '.join(train_tokens) + '*' + '\t') # * and \t are EOS and SOS respectively
 target_chars = set(' '.join(train_dec_tokens) + '*' + '\t')
 nb_input_chars = len(input_chars)
@@ -97,9 +97,9 @@ print("Number of train_steps:",train_steps)
 print("Number of val_steps:",val_steps)
 
 # Compile the model.
-#model, encoder_model, decoder_model = seq2seq(hidden_size, nb_input_chars, nb_target_chars)
-model_cnt=26
-model, encoder_model, decoder_model = restore_model("checkpoints/seq2seq_epoch_"+str(model_cnt)+".h5",hidden_size)
+model, encoder_model, decoder_model = seq2seq(hidden_size, nb_input_chars, nb_target_chars)
+model_cnt=0
+#model, encoder_model, decoder_model = restore_model("checkpoints/seq2seq_epoch_"+str(model_cnt)+".h5",hidden_size)
 print(model.summary())
 
 maxlen = max([len(token) for token in train_tokens]) + 2
@@ -115,28 +115,13 @@ for epoch in range(model_cnt,50):
     train_encoder, train_decoder, train_target = transform2( train_tokens[s_ind:e_ind], maxlen, shuffle=False, dec_tokens=train_dec_tokens[s_ind:e_ind])
     val_encoder, val_decoder, val_target = transform2( val_tokens[s_ind:e_ind], maxlen, shuffle=False, dec_tokens=val_dec_tokens[s_ind:e_ind])
 
+    train_encoder_batch = batch(train_encoder, maxlen, input_ctable, train_batch_size, reverse)
+    train_decoder_batch = batch(train_decoder, maxlen, target_ctable, train_batch_size)
+    train_target_batch  = batch(train_target, maxlen, target_ctable, train_batch_size)    
 
-    # write out train tokens
-    #with open("train/train_encoder_"+str(epoch), "w") as f:
-    #    f.write(" ".join(tok for tok in train_encoder))
-    #with open("train/train_decoder_"+str(epoch), "w") as f:
-    #    f.write(" ".join(tok for tok in train_decoder))
-    #with open("train/train_target_"+str(epoch), "w") as f:
-    #    f.write(" ".join(tok for tok in train_target))
-
-    train_encoder_batch = batch(train_encoder, maxlen, input_ctable,
-                                train_batch_size, reverse)
-    train_decoder_batch = batch(train_decoder, maxlen, target_ctable,
-                                train_batch_size)
-    train_target_batch  = batch(train_target, maxlen, target_ctable,
-                                train_batch_size)    
-
-    val_encoder_batch = batch(val_encoder, maxlen, input_ctable,
-                              val_batch_size, reverse)
-    val_decoder_batch = batch(val_decoder, maxlen, target_ctable,
-                              val_batch_size)
-    val_target_batch  = batch(val_target, maxlen, target_ctable,
-                              val_batch_size)
+    val_encoder_batch = batch(val_encoder, maxlen, input_ctable, val_batch_size, reverse)
+    val_decoder_batch = batch(val_decoder, maxlen, target_ctable, val_batch_size)
+    val_target_batch  = batch(val_target, maxlen, target_ctable, val_batch_size)
 
     train_loader = datagen(train_encoder_batch,
                            train_decoder_batch, train_target_batch)
@@ -162,7 +147,7 @@ for epoch in range(model_cnt,50):
     print('Decoded tokens:', decoded_tokens)
     print('Target tokens: ', target_tokens)
     print('-')
-    
+    break    
     # Save the model at end of each epoch.
     model_file = '_'.join(['seq2seq', 'epoch', str(epoch + 1)]) + '.h5'
     save_dir = 'checkpoints'
