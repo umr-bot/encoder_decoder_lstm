@@ -147,7 +147,7 @@ for epoch in range(model_cnt,50):
     print('Decoded tokens:', decoded_tokens)
     print('Target tokens: ', target_tokens)
     print('-')
-    break    
+
     # Save the model at end of each epoch.
     model_file = '_'.join(['seq2seq', 'epoch', str(epoch + 1)]) + '.h5'
     save_dir = 'checkpoints'
