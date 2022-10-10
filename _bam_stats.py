@@ -98,6 +98,57 @@ def join_data(err_folds,without_err,norm_without_err):
 
     return sorted_list, norm_sorted_list
 
+ll = list(set([tok for toks in data_handler.without_err for tok in toks.split()]))
+interval = int(len(ll)/num_folds)
+ll_spliced=[]
+e = defaultdict(set)
+for i in range(num_folds):
+    if i == num_folds-1: ll_spliced = ll[i*interval:]
+    else: ll_spliced = ll[i*interval:(i+1)*interval]
+    # Add 250 tuples from correct tokens to dev and test
+    dev = list(tok[0][2][1] for tok in err_folds["fold"+str(i+1)+"dev"])
+    test = list(tok[0][2][1] for tok in err_folds["fold"+str(i+1)+"test"])
+    dev_test = dev + test
+    e["fold"+str(i+1)+"dev"] = set([tup[0][2] for tup in err_folds["fold"+str(i+1)+"dev"]] + [(x,x) for x in ll_spliced[-1000:-500]])
+    e["fold"+str(i+1)+"test"] = set([tup[0][2] for tup in err_folds["fold"+str(i+1)+"test"]] + [(x,x) for x in ll_spliced[-500:]])
+    e["fold"+str(i+1)] = set([tup[0][2] for tup in err_folds["fold"+str(i+1)]])
+    # note union does not do in place updates, hence have to assign result
+    e["fold"+str(i+1)]=e["fold"+str(i+1)].union([(x,x) for x in ll_spliced[0:-1000] if x not in dev_test])
+#    e[key_name].union(set(tup[0][2] for tup in err_folds[key_name] if tup[0][2] not in ll))
+
+#ll=list(ll)
+#interval = int(len(ll)/num_folds)
+#for i in range(num_folds):
+#    if i == (num_folds-1): e["fold"+str(i)].update(ll[interval:])
+#    e["fold"+str(i)].union(ll[interval:i*interval])
+
+#e = defaultdict(list)
+#for key_name in err_folds.keys():
+#    err_ = set(x[0][2][0] for x in err_folds[key_name])
+#    norm_ = set(x[0][2][1] for x in err_folds[key_name])
+#    e[key_name] = [err_,norm_]
+#    ll_and = ll.intersection(norm_)
+#    if len(ll_and) > 0:
+#        print(f"making {key_name} disjoint of without error data")
+#        for el in ll_and: 
+#            for i in range(len(err_folds[key_name])):
+#                err_fold0 = err_folds[key_name][i][0][2][0]
+#                err_fold1 = err_folds[key_name][i][0][2][1]
+#                if err_fold != el:
+#                    e[key_name].append((err_fold0, err_fold1))
+                    #err_folds[key_name].pop(i)
+                    #i -= 1
+            #e[key_name].remove(el)
+
+#e = defaultdict(set)
+#for i in range(1,num_folds+1):
+#    fold_name = "fold"+str(i)
+#    e1 = set([x[0][2][1] for x in err_folds[fold_name]])
+#    e2 =set([x[0][2][1] for x in err_folds[fold_name+"dev"]])
+#    e3 =set([x[0][2][1] for x in err_folds[fold_name+"test"]])
+#    err_fold = e1.union(e2).union(e3)
+#    e[fold_name].update(err_fold)
+
 #without_err_folds = split(without_err,k_folds=4)
 #norm_without_err_folds = split(norm_without_err,k_folds=4)
 
