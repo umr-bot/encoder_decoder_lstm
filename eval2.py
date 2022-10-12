@@ -59,45 +59,45 @@ test_tokens, test_dec_tokens = copy_test_tokens,copy_test_dec_tokens
 
 # Compile the model.
 #model, encoder_model, decoder_model = seq2seq(hidden_size, nb_input_chars, nb_target_chars)
-model_cnt=40
-model, encoder_model, decoder_model = restore_model("checkpoints/seq2seq_epoch_"+str(model_cnt)+".h5",hidden_size, lstm_2_flag=False)
-print(model.summary())
-
-maxlen = max([len(token) for token in train_tokens]) + 2
-
-# Evaluate loop.
-start = 0
-batch_size = 10
-#for batch in tqdm(range(start,len(test_sentences))):
-for i in tqdm(range(start,len(test_tokens), batch_size)):
-    #if batch%250==0: print(f"[batch {batch}/{len(test_sentences)}]")
-    #test_sentence, test_norm_sentence = test_sentences[batch], test_norm_sentences[batch]
-    #test_tokens = test_sentence.split()
-    #test_dec_tokens = test_norm_sentence.split()
-    test_tokens_batch = test_tokens[i:i+batch_size]
-    test_dec_tokens_batch = test_dec_tokens[i:i+batch_size]
-    test_encoder, test_decoder, test_target = transform2( test_tokens_batch, maxlen, shuffle=False, dec_tokens=test_dec_tokens_batch)
-    if test_encoder == [] :
-        # this case happens when there are only words with lengths less than
-        # three in a test sentence. We only consider word lengths > 3
-        # in the function transform2. Hence words are written as was inputted below.
-        #input_tokens, target_tokens, decoded_tokens=test_tokens,test_dec_tokens,test_dec_tokens
-        continue
-    else: 
-        # Decode a batch of misspelled tokens from the test set
-        nb_tokens = len(test_encoder)
-        input_tokens, target_tokens, decoded_tokens = decode_sequences(
-            test_encoder, test_target, input_ctable, target_ctable,
-            maxlen, reverse, encoder_model, decoder_model, nb_tokens,
-            sample_mode=sample_mode, random=False)
-    
-    with open("toks","a") as f:
-        for input_token,decoded_token,target_token in zip(input_tokens,decoded_tokens,target_tokens):
-            f.write(input_token+',')
-            f.write(decoded_token+',')
-            f.write(target_token)
-            f.write('\n')
-        f.write('\n')
+#model_cnt=40
+#model, encoder_model, decoder_model = restore_model("checkpoints/seq2seq_epoch_"+str(model_cnt)+".h5",hidden_size, lstm_2_flag=False)
+#print(model.summary())
+#
+#maxlen = max([len(token) for token in train_tokens]) + 2
+#
+## Evaluate loop.
+#start = 0
+#batch_size = 10
+##for batch in tqdm(range(start,len(test_sentences))):
+#for i in tqdm(range(start,len(test_tokens), batch_size)):
+#    #if batch%250==0: print(f"[batch {batch}/{len(test_sentences)}]")
+#    #test_sentence, test_norm_sentence = test_sentences[batch], test_norm_sentences[batch]
+#    #test_tokens = test_sentence.split()
+#    #test_dec_tokens = test_norm_sentence.split()
+#    test_tokens_batch = test_tokens[i:i+batch_size]
+#    test_dec_tokens_batch = test_dec_tokens[i:i+batch_size]
+#    test_encoder, test_decoder, test_target = transform2( test_tokens_batch, maxlen, shuffle=False, dec_tokens=test_dec_tokens_batch)
+#    if test_encoder == [] :
+#        # this case happens when there are only words with lengths less than
+#        # three in a test sentence. We only consider word lengths > 3
+#        # in the function transform2. Hence words are written as was inputted below.
+#        #input_tokens, target_tokens, decoded_tokens=test_tokens,test_dec_tokens,test_dec_tokens
+#        continue
+#    else: 
+#        # Decode a batch of misspelled tokens from the test set
+#        nb_tokens = len(test_encoder)
+#        input_tokens, target_tokens, decoded_tokens = decode_sequences(
+#            test_encoder, test_target, input_ctable, target_ctable,
+#            maxlen, reverse, encoder_model, decoder_model, nb_tokens,
+#            sample_mode=sample_mode, random=False)
+#    
+#    with open("toks","a") as f:
+#        for input_token,decoded_token,target_token in zip(input_tokens,decoded_tokens,target_tokens):
+#            f.write(input_token+',')
+#            f.write(decoded_token+',')
+#            f.write(target_token)
+#            f.write('\n')
+#        f.write('\n')
 #    print('-')
 #    print('Input tokens:  ', input_tokens)
 #    print('Decoded tokens:', decoded_tokens)

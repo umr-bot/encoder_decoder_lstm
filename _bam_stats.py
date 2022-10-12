@@ -62,42 +62,6 @@ if set(tuple(flatten(rotate(x,2)[1:4]))).isdisjoint(x[2]): print("fold3 disjoint
 
 if set(tuple(flatten(rotate(x,3)[1:4]))).isdisjoint(x[3]): print("fold4 disjoint of all other folds")
 
-def write_folds(err_folds):
-    for fold_key in err_folds.keys():
-        i = str(int(fold_key[4]))
-        fn = "bam_folds/"+"fold"+str(i)+"/"+fold_key
-        with open(fn,"w") as f:
-            trains = [x[0][0] for x in err_folds[fold_key]]
-            for train in trains: f.write(train+"\n")
-        norm_fn = "bam_folds/"+"norm_fold"+str(i)+"/"+fold_key
-        with open(norm_fn,"w") as f:
-            norm_trains = [x[0][1] for x in err_folds[fold_key]]
-            for norm_train in norm_trains: f.write(norm_train+"\n")
-
-def join_data(err_folds,without_err,norm_without_err):
-    err_folds, counts = zip(*err_folds)
-    errors,norm_errors,error_tups_reformed = zip(*err_folds)
-    assert(len(without_err)==len(norm_without_err))
-
-    sorted_list = []
-    if len(without_err) > len(err_folds): 
-        sorted_list = list(distribute(source_one=without_err,source_two=errors))
-        norm_sorted_list = list(distribute(source_one=norm_without_err,source_two=norm_errors))
-        print("Less sentences with errors than those without.")
-    elif len(without_err) == len(err_folds):
-        # Add empty sentences to source_one arguments for distribute function to
-        # work, source_one > source_two, hence we add empty sentence
-        sorted_list = distribute(source_one=without_err.append(''),source_two=errors)
-        norm_sorted_list = distribute(source_one=norm_without_err.append(''),source_two=norm_errors)
-        print("Sentences with errors the same amount as those without.")
-    else: # reverse order of arguments passed to distribute function
-          # as len(source_one) > len(source_two) for function to work
-        sorted_list = distribute(source_one=errors,source_two=without_err)
-        norm_sorted_list = distribute(source_one=norm_errors,source_two=norm_without_err)
-        print("More sentences with errors than those without.")
-
-    return sorted_list, norm_sorted_list
-
 ll = list(set([tok for toks in data_handler.without_err for tok in toks.split()]))
 interval = int(len(ll)/num_folds)
 ll_spliced=[]
