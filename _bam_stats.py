@@ -106,25 +106,13 @@ class BamStats:
     
     def make_ana_folds(self):
         """Make data anagram hashing compatible"""
-        self.ana_folds = []
-        self.norm_ana_folds = []
-        for i in range(1,self.num_folds+1):
-            train=[line[0][0] for line in self.err_folds["fold"+str(i)]]
-            dev=[line[0][0] for line in self.err_folds["fold"+str(i)+"dev"]]
-            test=[line[0][0] for line in self.err_folds["fold"+str(i)+"test"]]
-            norm_train=[line[0][1] for line in self.err_folds["fold"+str(i)]]
-            norm_dev=[line[0][1] for line in self.err_folds["fold"+str(i)+"dev"]]
-            norm_test=[line[0][1] for line in self.err_folds["fold"+str(i)+"test"]]
-            
-            self.ana_folds.append(train+dev+test)
-            self.norm_ana_folds.append(norm_train+norm_dev+norm_test)
 
-#        bi_grams,norm_bi_grams=[],[]
-#        for line,norm_line in zip(bam_stats.data_handler.without_err,bam_stats.data_handler.norm_without_err):
-#            toks,norm_toks = line.split(), norm_line.split()
-#            for i in range(len(toks)-1):
-#                bi_grams.append((toks[i],toks[i+1]))
-#                norm_bi_grams.append((norm_toks[i],norm_toks[i+1]))
+        bi_grams,norm_bi_grams=[],[]
+        for line,norm_line in zip(bam_stats.data_handler.without_err,bam_stats.data_handler.norm_without_err):
+            toks,norm_toks = line.split(), norm_line.split()
+            for i in range(len(toks)-1):
+                bi_grams.append((toks[i],toks[i+1]))
+                norm_bi_grams.append((norm_toks[i],norm_toks[i+1]))
 
 if __name__ == "__main__":
    bam_stats = BamStats() 
