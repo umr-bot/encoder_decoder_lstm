@@ -1,6 +1,6 @@
 # coding: utf-8
 from sort_error_types import DataHandler, distribute, split
-from collections import defaultdict
+from collections import defaultdict, Counter
 from tqdm import tqdm
 
 def rotate(l, n):
@@ -106,14 +106,54 @@ class BamStats:
     
     def make_ana_folds(self):
         """Make data anagram hashing compatible"""
-
-        bi_grams,norm_bi_grams=[],[]
-        for line,norm_line in zip(bam_stats.data_handler.without_err,bam_stats.data_handler.norm_without_err):
+        # Assign bigram lists
+        self.bi_grams,self.norm_bi_grams=[],[]
+        for line,norm_line in zip(self.data_handler.without_err,self.data_handler.norm_without_err):
             toks,norm_toks = line.split(), norm_line.split()
             for i in range(len(toks)-1):
-                bi_grams.append((toks[i],toks[i+1]))
-                norm_bi_grams.append((norm_toks[i],norm_toks[i+1]))
+                self.bi_grams.append((toks[i],toks[i+1]))
+                self.norm_bi_grams.append((norm_toks[i],norm_toks[i+1]))
+        # Assign trigram lists
+        self.tri_grams,self.norm_tri_grams=[],[]
+        for line,norm_line in zip(self.data_handler.without_err,self.data_handler.norm_without_err):
+            toks,norm_toks = line.split(), norm_line.split()
+            for i in range(len(toks)-2):
+                self.tri_grams.append((toks[i],toks[i+1],toks[i+2]))
+                self.norm_tri_grams.append((norm_toks[i],norm_toks[i+1],norm_toks[i+2]))
+        # Split n-grams into folds
+        self.bi_grams_cnts = Counter(self.bi_grams)
+        tot_cnt=0
+        for k,v in self.bi_grams_cnts.most_common():
+            tot_cnt+=v
+        partition_size=int(tot_cnt/16)
+        self.part_tups=[]
+        tups=[]
+        temp_cnt=0
+        for k,v in self.bi_grams_cnts.most_common():
+            temp_cnt+=v
+            tups.append((k,v))
+            if temp_cnt>=partition_size or temp_cnt>partition_size-100:
+                self.part_tups.append(tups)
+                tups=[]
+                temp_cnt=0
+        # Assign folds
+        z=[(x,y) for x, y in zip(self.part_tups[:(len(self.part_tups)+1)//2], reversed(self.part_tups))]
+        self.fold_tups=[]
+        for i in range(0,8,2):
+            l1=[y for x in z[i] for y in x]
+            l2=[y for x in z[i+1] for y in x]
+            self.fold_tups.append(l1+l2)
+        # Sanity check
+        t=0
+        for i in range(4):
+            for x in self.fold_tups[i]:
+                t+=x[1]
+            print(t)
+            t=0
 
+    def write_n_gram(self): 
+        """Write out data created in make_ana_folds function"""
+        pass
 if __name__ == "__main__":
    bam_stats = BamStats() 
 #lines = [line for line in data_handler.without_err]
