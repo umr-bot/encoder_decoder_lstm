@@ -29,6 +29,8 @@ def truncated_loss(y_true, y_pred):
 
 def recall(y_true, y_pred):
     y_true = K.ones_like(y_true)
+    # K.clip is used in the case of non-binary classification
+    # where elements of y_true and y_pred some floating point number
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     all_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
 
@@ -80,17 +82,20 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     # Define the main model consisting of encoder and decoder.
     encoder_inputs = Input(shape=(None, nb_input_chars),
                            name='encoder_data')
-    encoder_lstm = LSTM(hidden_size, recurrent_dropout=0.2,
-                        return_sequences=True, return_state=False,
+    encoder_lstm_1 = LSTM(hidden_size, recurrent_dropout=0.2,
+                        return_sequences=True, return_state=True,
                         name='encoder_lstm_1')
     # here encoder outputs contains three things:{(all h states),(last h state),(last c state)}
-    encoder_outputs = encoder_lstm(encoder_inputs)
-    
-    encoder_lstm = LSTM(hidden_size, recurrent_dropout=0.2,
-                        return_sequences=False, return_state=True,
-                        name='encoder_lstm_2')
-    # here encoder outputs contains all state_h 's including the returned one
-    encoder_outputs, state_h, state_c = encoder_lstm(encoder_outputs)
+    #encoder_outputs_1 = encoder_lstm_1(encoder_inputs)
+    encoder_outputs, state_h, state_c = encoder_lstm_1(encoder_inputs)
+
+###    encoder_lstm_2 = LSTM(hidden_size, recurrent_dropout=0.2,
+###                        return_sequences=False, return_state=True,
+###                        name='encoder_lstm_2')
+###    #NOTE: last lstm layer should have return_state=True
+###    # here encoder outputs contains all state_h 's including the returned one
+###    encoder_outputs_2, state_h, state_c = encoder_lstm_2(encoder_outputs_1)
+
     # We discard `encoder_outputs` and only keep the states.
     encoder_states = [state_h, state_c]
 

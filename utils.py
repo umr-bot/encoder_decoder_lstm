@@ -14,6 +14,7 @@ np.random.seed(1234)
 SOS = '\t' # start of sequence.
 EOS = '*' # end of sequence.
 CHARS = list("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+BAM_CHARS = list("\-fsé\.lɲhaiyjuŋtɔ*opèxewbçknmvqcrɛzgd")
 REMOVE_CHARS = '[#$%"\+@<=>!&,-.?:;()*\[\]^_`{|}~/\d\t\n\r\x0b\x0c]'
 
 
@@ -180,31 +181,43 @@ def transform(tokens, maxlen, error_rate=0.3, shuffle=True):
 
     return encoder_tokens, decoder_tokens, target_tokens
 
-def transform2(tokens, maxlen, shuffle=True, dec_tokens=[]):
+def transform2(tokens, maxlen, shuffle=False, dec_tokens=[], chrs=[]):
     """Transform tokens into model inputs and targets.
     All inputs and targets are padded to maxlen with EOS character.
     """
-    if shuffle:
-        print('Shuffling data.')
-        np.random.shuffle(tokens)
     encoder_tokens = []
     decoder_tokens = []
     target_tokens = []
-    for token,dec_token in zip(tokens,dec_tokens):
+    copy_tokens,copy_dec_tokens=[],[]
+    if chrs != []:
+        for i in range(len(tokens)):
+            tok,dec_tok = tokens[i], dec_tokens[i]
+            if set(tok).issubset(chrs) and set(dec_tok).issubset(chrs):
+                copy_tokens.append(tok)
+                copy_dec_tokens.append(dec_tok)
+        tokens, dec_tokens = copy_tokens,copy_dec_tokens
+
+    assert(len(tokens)==len(dec_tokens))
+    for i in range(len(tokens)):
+        token,dec_token = tokens[i], dec_tokens[i]
         if len(token) > 3: # only deal with tokens longer than length 3
             #encoder = add_speling_erors(token, error_rate=error_rate)
             encoder = token
             encoder += EOS * (maxlen - len(encoder)) # Padded to maxlen.
-            encoder_tokens.append(encoder)
+            #encoder_tokens.append(encoder)
         
             decoder = SOS + dec_token
             decoder += EOS * (maxlen - len(decoder))
-            decoder_tokens.append(decoder)
+            #decoder_tokens.append(decoder)
         
             target = decoder[1:]
             target += EOS * (maxlen - len(target))
-            target_tokens.append(target)
-            assert(len(encoder) == len(decoder) == len(target))
+            #target_tokens.append(target)
+            if (len(encoder) == len(decoder) == len(target)):
+                encoder_tokens.append(encoder)
+                decoder_tokens.append(decoder)
+                target_tokens.append(target)
+            else: continue
 
     return encoder_tokens, decoder_tokens, target_tokens
 
@@ -348,17 +361,21 @@ def decode_sequences(inputs, targets, input_ctable, target_ctable,
     return input_tokens, target_tokens, decoded_tokens
 
 
-def restore_model(path_to_full_model, hidden_size):
+def restore_model(path_to_full_model, hidden_size, lstm_2_flag=True):
     """Restore model to construct the encoder and decoder."""
     model = load_model(path_to_full_model, custom_objects={
         'truncated_acc': truncated_acc, 'truncated_loss': truncated_loss, 'recall': recall, "precision": precision, "f1_score": f1_score})
     
+    lstm_2_flag=False
+
     encoder_inputs = model.input[0] # encoder_data
     encoder_lstm1 = model.get_layer('encoder_lstm_1')
-    encoder_lstm2 = model.get_layer('encoder_lstm_2')
+    if lstm_2_flag==True: encoder_lstm2 = model.get_layer('encoder_lstm_2')
     
     encoder_outputs = encoder_lstm1(encoder_inputs)
-    _, state_h, state_c = encoder_lstm2(encoder_outputs)
+    if lstm_2_flag==True: _, state_h, state_c = encoder_lstm2(encoder_outputs)
+    else: _, state_h, state_c = encoder_outputs
+
     encoder_states = [state_h, state_c]
     encoder_model = Model(inputs=encoder_inputs, outputs=encoder_states)
 

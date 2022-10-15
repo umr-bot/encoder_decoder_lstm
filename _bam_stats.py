@@ -14,7 +14,12 @@ class BamStats:
         self.sorted_single_errs, self.err_counts = self.data_handler.get_err_counts_dicts()
         self.make_folds()
         self.make_err_folds()
-        self.make_ana_folds()
+        self.make_n_grams()
+        self.bi_gram_folds = self.create_n_gram_folds(self.bi_grams)
+        self.tri_gram_folds = self.create_n_gram_folds(self.tri_grams)
+        self.write_n_grams(fold_tups=self.bi_gram_folds)
+        self.write_n_grams(fold_tups=self.tri_gram_folds)
+
 
     def make_folds(self):
         """Make folds dict containing counts of error types in corpus"""
@@ -104,7 +109,7 @@ class BamStats:
             with open(out_fn+key_name, "w") as f:
                 for tup in tups[key_name]: f.write(tup[0]+','+tup[1]+"\n")
     
-    def make_ana_folds(self):
+    def make_n_grams(self):
         """Make data anagram hashing compatible"""
         # Assign bigram lists
         self.bi_grams,self.norm_bi_grams=[],[]
@@ -120,42 +125,53 @@ class BamStats:
             for i in range(len(toks)-2):
                 self.tri_grams.append((toks[i],toks[i+1],toks[i+2]))
                 self.norm_tri_grams.append((norm_toks[i],norm_toks[i+1],norm_toks[i+2]))
+
+    def create_n_gram_folds(self,n_grams):
         # Split n-grams into folds
-        self.bi_grams_cnts = Counter(self.bi_grams)
+        n_grams_cnts = Counter(n_grams)
         tot_cnt=0
-        for k,v in self.bi_grams_cnts.most_common():
+        for k,v in n_grams_cnts.most_common():
             tot_cnt+=v
         partition_size=int(tot_cnt/16)
-        self.part_tups=[]
+        part_tups=[]
         tups=[]
         temp_cnt=0
-        for k,v in self.bi_grams_cnts.most_common():
+        for k,v in n_grams_cnts.most_common():
             temp_cnt+=v
             tups.append((k,v))
             if temp_cnt>=partition_size or temp_cnt>partition_size-100:
-                self.part_tups.append(tups)
+                part_tups.append(tups)
                 tups=[]
                 temp_cnt=0
         # Assign folds
-        z=[(x,y) for x, y in zip(self.part_tups[:(len(self.part_tups)+1)//2], reversed(self.part_tups))]
-        self.fold_tups=[]
+        z=[(x,y) for x, y in zip(part_tups[:(len(part_tups)+1)//2], reversed(part_tups))]
+        fold_tups=[]
         for i in range(0,8,2):
             l1=[y for x in z[i] for y in x]
             l2=[y for x in z[i+1] for y in x]
-            self.fold_tups.append(l1+l2)
+            fold_tups.append(l1+l2)
         # Sanity check
         t=0
         for i in range(4):
-            for x in self.fold_tups[i]:
+            for x in fold_tups[i]:
                 t+=x[1]
             print(t)
             t=0
+        return fold_tups
 
-    def write_n_gram(self): 
-        """Write out data created in make_ana_folds function"""
-        pass
+    def write_n_grams(self, fold_tups): 
+        """Write out data created in n_gram folds"""
+        for i in range(len(fold_tups)):
+            if len(fold_tups[i][0][0]) == 2:
+                with open("bam_folds/n_grams/bi_grams_fold"+str(i+1),"w") as f:
+                    for gram in fold_tups[i]: f.write(gram[0][0]+","+gram[0][1]+"\n")
+            elif len(fold_tups[i][0][0]) == 3:
+                with open("bam_folds/n_grams/tri_grams_fold"+str(i+1),"w") as f:
+                    for gram in fold_tups[i]: f.write(gram[0][0]+','+gram[0][1]+','+gram[0][2]+"\n")
+
 if __name__ == "__main__":
-   bam_stats = BamStats() 
+   bam_stats = BamStats()
+
 #lines = [line for line in data_handler.without_err]
 #lines_set = [set(line.split()) for line in data_handler.without_err]
 #lines_tup = [(line,set(line.split())) for line in data_handler.without_err]
