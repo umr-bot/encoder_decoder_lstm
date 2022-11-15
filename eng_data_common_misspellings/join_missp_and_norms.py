@@ -43,14 +43,18 @@ counts = Counter(norms) # bin normalized misspelled word tokens
 interval = len(missp)/(8*3) # 8*3 is from train, val and norm partitions
 cnt = 0
 nt=[defaultdict(list) for dummy in range(4)]
-
+pop_list=[]
 for d_norm_tok,err_list in tqdm(d.items(), desc = "Looping over d"):
     for i in range(4):
         for norm_tok in set(norm_train[i]):
             if norm_tok == d_norm_tok:
                 nt[i][norm_tok].append(err_list)
+                pop_list.append(norm_tok)
                 cnt+=len(err_list)
         if cnt > interval:
             cnt=0
             continue
+# so that validation and test dont consider items already reserved for train
+#for item in pop_list:
+#    d.pop(item)
 
