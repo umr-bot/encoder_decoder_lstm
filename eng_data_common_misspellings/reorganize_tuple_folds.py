@@ -12,15 +12,17 @@ for i in range(4):
     norm_val_folds.append(norm_val[:len(norm_val)-500])
     test_folds.append(val[-500:])
     norm_test_folds.append(norm_val[-500:])
+
 for i in range(len(val_folds)):
     val_fold,test_fold = val_folds[i],test_folds[i]
     with open("unbalanced_folds/foldset"+str(i+1)+"/val",'w') as f:
-        for line in val_fold: f.write(line+'\n')
+        for j in range(len(val_fold)): f.write(val_fold[j]+'\n')
     with open("unbalanced_folds/foldset"+str(i+1)+"/test",'w') as f:
         for line in test_fold: f.write(line+'\n')
+    
     norm_val_fold,norm_test_fold = norm_val_folds[i],norm_test_folds[i]
     with open("unbalanced_folds/norm_foldset"+str(i+1)+"/val",'w') as f:
-        for line in norm_val_fold: f.write(line+'\n')
+        for j in range(len(norm_val_fold)): f.write(norm_val_fold[j]+'\n')
     with open("unbalanced_folds/norm_foldset"+str(i+1)+"/test",'w') as f:
         for line in norm_test_fold: f.write(line+'\n')
  

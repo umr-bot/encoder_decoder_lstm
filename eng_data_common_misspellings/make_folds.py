@@ -21,16 +21,19 @@ def get_non_error_bigrams():
     assert(len(tuples)==len(cnts))
     return tups, cnts
 
+def eng_dict_to_tups(fn="shuffled_corncob.txt"):
+    with open(fn) as f: data=[(line.rstrip('\n'),line.rstrip('\n')) for line in f]
+    return data
+
 class MakeFolds:
     def __init__(self,n_gram_fn='', bigram_flag=True):
         self.bigram_flag=bigram_flag
         if bigram_flag==False: #use read in file name
             with open(n_gram_fn) as f:
                 self.bi_grams=[(line.split(',')[0].lstrip(' '),line.split(',')[1].rstrip('\n')) for line in f]
+                self.bi_grams+=eng_dict_to_tups(fn="words")
         else: self.bi_grams,self.cnts=get_non_error_bigrams()
-        self.bi_grams=random.sample(self.bi_grams,k=len(self.bi_grams))
         self.fold_tups=self.create_n_gram_folds(self.bi_grams)
-        self.write_n_grams(self.fold_tups)
 
     def create_n_gram_folds(self,n_grams):
         # Split n-grams into folds
@@ -81,3 +84,5 @@ class MakeFolds:
 if __name__ == "__main__":
     makefolds=MakeFolds("wiki_missp_aspell.txt",bigram_flag=False)
     #makefolds=MakeFolds(bigram_flag=True)
+    makefolds.write_n_grams(makefolds.fold_tups)
+

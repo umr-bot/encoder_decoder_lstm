@@ -17,6 +17,9 @@ class MakeFoldsFromVal:
             with open(fold_fn+"val") as f: val=[line.rstrip('\n') for line in f]
             with open(norm_fold_fn+"val") as f: norm_val=[line.rstrip('\n') for line in f]
             # Splice and append folds
+            print(f"fold: {i+1}")
+            print(f"val: {len(val)}, norm_val: {len(norm_val)}")
+            print(f"splicing range {int(3*len(val)/4)}")
             train = val[:int(3*len(val)/4)]
             val = val[int(3*len(val)/4):]
             train_folds.append(train)
@@ -45,6 +48,6 @@ class MakeFoldsFromVal:
 
 if __name__ == "__main__":
     make_train_from_val=MakeFoldsFromVal()
-    make_train_from_val.read_folds(fn="folds/foldset",norm_fn="folds/norm_foldset")
+    make_train_from_val.read_folds(fn="unbalanced_folds/foldset",norm_fn="unbalanced_folds/norm_foldset")
     make_train_from_val.write_folds(fn="folds_enc_dec/foldset",norm_fn="folds_enc_dec/norm_foldset")
 
