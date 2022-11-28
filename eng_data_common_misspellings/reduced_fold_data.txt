@@ -1,0 +1,28 @@
+#Tokens
+Number of tokens in train fold_1: 22415
+Number of tokens in train fold_2: 22511
+Number of tokens in train fold_3: 22570
+Number of tokens in train fold_4: 22565
+Number of tokens in val fold_1: 2769
+Number of tokens in val fold_2: 2874
+Number of tokens in val fold_3: 2814
+Number of tokens in val fold_4: 2881
+Number of tokens in test fold_1: 2812
+Number of tokens in test fold_2: 2804
+Number of tokens in test fold_3: 2831
+Number of tokens in test fold_4: 2795
+
+#Types
+ntrain 20835
+ntrain 20825
+ntrain 20901
+ntrain 20889
+val 2592
+val 2632
+val 2602
+val 2628
+test 2600
+test 2607
+test 2612
+test 2605
+

@@ -144,6 +144,7 @@ if __name__ == "__main__":
     #write_folds(nval,fn="val")
     #write_folds(ntest,fn="test")
     with open("./words_shuffled") as f: words = set(line.strip('\n') for line in f)
+
     for i in tqdm(range(num_folds), desc="Finding set of words left over"):
         for norm_tok in ntrain[i].keys(): words.discard(norm_tok)
         for norm_tok in nval[i].keys(): words.discard(norm_tok)
