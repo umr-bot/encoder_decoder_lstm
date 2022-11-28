@@ -1,7 +1,7 @@
 # shuffle folds
 #dd if=/dev/random of=myrand count=1024 # to generate myrand file
 root_pwd=$(pwd)
-prefix="unshuffled_folds"
+prefix="eng_folds" # directory to shuffle files from
 for fold in ${prefix}/*
 do
     echo "Fold ${fold} being processed"
@@ -11,7 +11,7 @@ do
         #cat ${fn} | wc -l
         string=${fn}
         stripped_string=${string#"$prefix"}
-        shuf_out_fn="folds${stripped_string}"
+        shuf_out_fn="shuffled_folds${stripped_string}"
         shuf --random-source=myrand ${fn} > ${shuf_out_fn} 
     done
 done
