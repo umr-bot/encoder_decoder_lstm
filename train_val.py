@@ -28,17 +28,24 @@ sample_mode = 'argmax'
 reverse = True
 
 # extract training tokens
-with open("bam_folds/half_combined_folds/train") as f: train_tups = [tup.split(',') for tup in f]
+#with open("bam_folds/half_combined_folds/train") as f: train_tups = [tup.split(',') for tup in f]
+#train_tokens,train_dec_tokens = zip(*train_tups)
+#train_dec_tokens = [tok.strip('\n') for tok in train_dec_tokens]
+
+with open("eng_data_common_misspellings/folds/enc_dec_folds/enc_dec_fold1/train") as f:
+    train_tups = [line.strip('\n').split(',') for line in f]
 train_tokens,train_dec_tokens = zip(*train_tups)
-train_dec_tokens = [tok.strip('\n') for tok in train_dec_tokens]
 
 # Convert train word token lists to type lists
 #train_tokens,train_dec_tokens = get_type_lists(train_tokens,train_dec_tokens)
 
 # extract validation tokens
-with open("bam_folds/half_combined_folds/val") as f: val_tups = [tup.split(',') for tup in f]
+#with open("bam_folds/half_combined_folds/val") as f: val_tups = [tup.split(',') for tup in f]
+#val_tokens,val_dec_tokens = zip(*val_tups)
+#val_dec_tokens = [tok.strip('\n') for tok in val_dec_tokens]
+with open("eng_data_common_misspellings/folds/enc_dec_folds/enc_dec_fold1/val") as f:
+    val_tups = [line.strip('\n').split(',') for line in f]
 val_tokens,val_dec_tokens = zip(*val_tups)
-val_dec_tokens = [tok.strip('\n') for tok in val_dec_tokens]
 
 input_chars = set(' '.join(train_tokens) + '*' + '\t') # * and \t are EOS and SOS respectively
 target_chars = set(' '.join(train_dec_tokens) + '*' + '\t')
@@ -77,9 +84,12 @@ for epoch in range(model_cnt,100):
     #train_encoder, train_decoder, train_target = transform(
     #    vocab, maxlen, error_rate=error_rate, shuffle=True)
     # note shuffle false to keep train_tokens and train_dec_tokens in line
-    s_ind,e_ind = int(len(train_tokens) * (epoch/100)), int(len(train_tokens)*((epoch+1)/100))
-    train_encoder, train_decoder, train_target = transform2( train_tokens[s_ind:e_ind], maxlen, shuffle=False, dec_tokens=train_dec_tokens[s_ind:e_ind])
-    val_encoder, val_decoder, val_target = transform2( val_tokens[s_ind:e_ind], maxlen, shuffle=False, dec_tokens=val_dec_tokens[s_ind:e_ind])
+    st_ind,et_ind = int(len(train_tokens) * (epoch/100)), int(len(train_tokens)*((epoch+1)/100))
+    sv_ind,ev_ind = int(len(val_tokens) * (epoch/100)), int(len(val_tokens)*((epoch+1)/100))
+
+    train_encoder, train_decoder, train_target = transform2( train_tokens[st_ind:et_ind], maxlen, shuffle=False, dec_tokens=train_dec_tokens[st_ind:et_ind])
+    
+    val_encoder, val_decoder, val_target = transform2( val_tokens[sv_ind:ev_ind], maxlen, shuffle=False, dec_tokens=val_dec_tokens[sv_ind:ev_ind])
 
     train_encoder_batch = batch(train_encoder, maxlen, input_ctable, train_batch_size, reverse)
     train_decoder_batch = batch(train_decoder, maxlen, target_ctable, train_batch_size)
