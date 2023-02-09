@@ -39,7 +39,7 @@ class Metric():
            from tensorflow model.fit history object"""
         self.df = pd.DataFrame(self.metric_vals,columns=list(self.df.columns))
 
-    def plot_metrics(self,metric_names=["accuracy","val_accuracy"]):
+    def plot_metrics(self,metric_names=["loss","val_loss"]):
         x_range = list(range(self.df.shape[0])) #range with number of rows in df
         for i in range(len(metric_names)):
             # assign to y only the values and not indices out of df object
@@ -51,8 +51,8 @@ class Metric():
         plt.title('multiple plots')
         plt.show()
 
-#if "__name__" == "__main__":
-metric = Metric(fn="checkpoints_eng_3/history_eng_3.txt")
+if "__name__" == "__main__":
+    metric = Metric(fn="checkpoints_eng_3/history_eng_3.txt")
 #metric = Metric(fn="checkpoints_bam_1/history_bam_1.txt")
 
 #metric_vals = metric.decode()

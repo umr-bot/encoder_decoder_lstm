@@ -279,6 +279,15 @@ def datagen(encoder_iter, decoder_iter, target_iter):
         target = next(target_iter)
         yield ([encoder_input, decoder_input], target)
 
+def datagen_triplet(encoder_iter, decoder_iter, target_iter):
+    """Utility function to load data into required model format."""
+    inputs = zip(encoder_iter, decoder_iter)
+    while(True):
+        encoder_input, decoder_input = next(inputs)
+        x1, blank = next(inputs)
+        x2, blank = next(inputs)
+        target = next(target_iter)
+        yield ([encoder_input,x1,x2, decoder_input], target)
 
 def decode_sequences(inputs, targets, input_ctable, target_ctable,
                      maxlen, reverse, encoder_model, decoder_model,

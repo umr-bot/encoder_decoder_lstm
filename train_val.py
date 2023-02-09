@@ -6,7 +6,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 from utils import CharacterTable, transform
 from utils import batch, datagen, decode_sequences
-from utils import read_text, tokenize
+#from utils import read_text, tokenize
 from utils import restore_model
 from model import seq2seq
 
@@ -28,24 +28,19 @@ sample_mode = 'argmax'
 reverse = True
 
 # extract training tokens
-#with open("bam_folds/half_combined_folds/train") as f: train_tups = [tup.split(',') for tup in f]
-#train_tokens,train_dec_tokens = zip(*train_tups)
-#train_dec_tokens = [tok.strip('\n') for tok in train_dec_tokens]
-
+# train_dec_tokens are targets and train_tokens inputs
 with open("eng_data_common_misspellings/folds/enc_dec_folds/enc_dec_fold1/train") as f:
     train_tups = [line.strip('\n').split(',') for line in f]
-train_tokens,train_dec_tokens = zip(*train_tups)
+train_dec_tokens, train_tokens = zip(*train_tups)
 
 # Convert train word token lists to type lists
 #train_tokens,train_dec_tokens = get_type_lists(train_tokens,train_dec_tokens)
 
 # extract validation tokens
-#with open("bam_folds/half_combined_folds/val") as f: val_tups = [tup.split(',') for tup in f]
-#val_tokens,val_dec_tokens = zip(*val_tups)
-#val_dec_tokens = [tok.strip('\n') for tok in val_dec_tokens]
+# val_dec_tokens are targets and val_tokens inputs
 with open("eng_data_common_misspellings/folds/enc_dec_folds/enc_dec_fold1/val") as f:
     val_tups = [line.strip('\n').split(',') for line in f]
-val_tokens,val_dec_tokens = zip(*val_tups)
+val_dec_tokens, val_tokens = zip(*val_tups)
 
 input_chars = set(' '.join(train_tokens) + '*' + '\t') # * and \t are EOS and SOS respectively
 target_chars = set(' '.join(train_dec_tokens) + '*' + '\t')
