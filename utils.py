@@ -250,7 +250,6 @@ def my_transform(tokens, maxlen, error_tokens, shuffle=False):
 
     return encoder_tokens, decoder_tokens, target_tokens
 
-
 def batch(tokens, maxlen, ctable, batch_size=128, reverse=False):
     """Split data into chunks of `batch_size` examples."""
     def generate(tokens, reverse):
@@ -261,6 +260,37 @@ def batch(tokens, maxlen, ctable, batch_size=128, reverse=False):
                 yield token
     
     token_iterator = generate(tokens, reverse)
+    data_batch = np.zeros((batch_size, maxlen, ctable.size),
+                          dtype=np.float32)
+    while(True):
+        for i in range(batch_size):
+            token = next(token_iterator)
+            data_batch[i] = ctable.encode(token, maxlen)
+            #except: print(token)
+        yield data_batch
+
+def batch_triplet(token_triplets, maxlen, ctable, batch_size=128):
+    def generate(token_triplets):
+        while(True): # This flag yields an infinite generator.
+            for token_triplet in token_triplets: yield token_triplet
+    token_iterator = generate(val)
+    data_batch = np.zeros((batch_size, 3, maxlen, ctable.size), dtype=np.float32)
+    while(True):
+        for i in range(batch_size):
+            token = next(token_iterator)
+            data_batch[i] = (ctable.encode(token[0], maxlen), ctable.encode(token[1], maxlen),ctable.encode(token[2], maxlen))
+            #except: print(token)
+        yield data_batch
+
+def batch_bigram(token_pairs, maxlen, ctable, batch_size=128, reverse=False):
+    """Split data into chunks of `batch_size` examples."""
+    def generate(token_pairs, reverse):
+        while(True): # This flag yields an infinite generator.
+            for token_pair in token_pairs:
+                #if reverse: token = token[::-1]
+                yield token_pair
+    
+    token_iterator = generate(token_pairs, reverse)
     data_batch = np.zeros((batch_size, maxlen, ctable.size),
                           dtype=np.float32)
     while(True):
