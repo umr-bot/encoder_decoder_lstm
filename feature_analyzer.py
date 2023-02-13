@@ -66,9 +66,7 @@ val_encoder_batch = batch(val_encoder, maxlen, input_ctable, val_batch_size, rev
 val_decoder_batch = batch(val_decoder, maxlen, target_ctable, val_batch_size)
 val_target_batch  = batch(val_target, maxlen, target_ctable, val_batch_size)
 
-train_loader = datagen(train_encoder_batch,
-                       train_decoder_batch, train_target_batch)
-val_loader = datagen(val_encoder_batch,
-                     val_decoder_batch, val_target_batch)
+train_loader = datagen(train_encoder_batch, train_decoder_batch, train_target_batch)
+val_loader = datagen(val_encoder_batch, val_decoder_batch, val_target_batch)
 
 

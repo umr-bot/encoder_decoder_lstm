@@ -80,7 +80,7 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     """
     
     # Define the main model consisting of encoder and decoder.
-    encoder_inputs = Input(shape=(None, nb_input_chars, nb_input_chars, nb_input_chars),
+    encoder_inputs = Input(shape=(None, nb_input_chars),
                            name='encoder_data')
     encoder_lstm_1 = LSTM(hidden_size, recurrent_dropout=0.2,
                         return_sequences=True, return_state=True,
