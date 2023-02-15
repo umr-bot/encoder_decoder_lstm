@@ -11,10 +11,10 @@ import numpy as np
 np.random.seed(1234)
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
-hidden_size = 512
+hidden_size = 80
 nb_epochs = 100
-train_batch_size = 128
-val_batch_size = 256
+train_batch_size = 10
+val_batch_size = 20
 sample_mode = 'argmax'
 # Input sequences may optionally be reversed,
 # shown to increase performance by introducing
@@ -53,6 +53,12 @@ nb_target_chars = len(target_chars)
 # Define training and evaluation configuration.
 input_ctable  = CharacterTable(input_chars)
 target_ctable = CharacterTable(target_chars)
+
+train_steps = len(train_tokens[0]) // train_batch_size
+val_steps = len(val_tokens[0]) // val_batch_size
+print("Number of train_steps:",train_steps)
+print("Number of val_steps:",val_steps)
+
 
 # Compile the model.
 model, encoder_model, decoder_model = seq2seq(hidden_size, nb_input_chars, nb_target_chars)
