@@ -7,7 +7,8 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
 # Define the main model consisting of encoder and decoder.
     encoder_inputs_1 = Input(shape=(None, nb_input_chars), name='encoder_data_1')
     encoder_inputs_2 = Input(shape=(None, nb_input_chars), name='encoder_data_2')
-    encoder_input_concat = concatenate([encoder_inputs_1,encoder_inputs_2]) # concat along rows
+    encoder_inputs_3 = Input(shape=(None, nb_input_chars), name='encoder_data_3')
+    encoder_input_concat = concatenate([encoder_inputs_1,encoder_inputs_2,encoder_inputs_3]) # concat along rows
 
     encoder_lstm_1 = LSTM(hidden_size, recurrent_dropout=0.2, return_sequences=True, return_state=True, name='encoder_lstm_1')
 # here encoder outputs contains three things:{(all h states),(last h state),(last c state)}
@@ -26,7 +27,7 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
 
 # The encoder_model and decoder_models defined below are used when evaluating/using model
 # Define the encoder model separately.
-    encoder_model = Model(inputs=[encoder_inputs_1, encoder_inputs_2], outputs=encoder_states, name="encoder_outputs_2_model")
+    encoder_model = Model(inputs=[encoder_inputs_1, encoder_inputs_2, encoder_inputs_3], outputs=encoder_states, name="encoder_outputs_2_model")
 #encoder_model.summary()
 
 # Set up the decoder, using `encoder_states` as initial state.
@@ -41,7 +42,7 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
 
 # The main model will turn `encoder_input_data` & `decoder_input_data`
 # into `decoder_target_data`
-    model = Model(inputs=[encoder_inputs_1,encoder_inputs_2, decoder_inputs], outputs=decoder_outputs, name="main_model")
+    model = Model(inputs=[encoder_inputs_1,encoder_inputs_2,encoder_inputs_3, decoder_inputs], outputs=decoder_outputs, name="main_model")
 
 #adam = tensorflow.keras.optimizers.Adam(lr=0.001, decay=0.0)
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy', recall, f1_score])

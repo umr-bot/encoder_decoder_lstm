@@ -181,7 +181,7 @@ def transform(tokens, maxlen, error_rate=0.3, shuffle=True):
 
     return encoder_tokens, decoder_tokens, target_tokens
 
-def transform2(tokens, maxlen, shuffle=False, dec_tokens=[], chrs=[]):
+def transform2(tokens, maxlen, shuffle=False, dec_tokens=[], chrs=[], reverse=False):
     """Transform tokens into model inputs and targets.
     All inputs and targets are padded to maxlen with EOS character.
     """
@@ -200,10 +200,11 @@ def transform2(tokens, maxlen, shuffle=False, dec_tokens=[], chrs=[]):
     assert(len(tokens)==len(dec_tokens))
     for i in range(len(tokens)):
         token,dec_token = tokens[i], dec_tokens[i]
-        if len(token) > 3: # only deal with tokens longer than length 3
+        if len(token) > 0: # only deal with tokens longer than length 3
             #encoder = add_speling_erors(token, error_rate=error_rate)
             encoder = token
             encoder += EOS * (maxlen - len(encoder)) # Padded to maxlen.
+            if reverse: encoder = encoder[::-1]
             #encoder_tokens.append(encoder)
         
             decoder = SOS + dec_token
@@ -222,7 +223,7 @@ def transform2(tokens, maxlen, shuffle=False, dec_tokens=[], chrs=[]):
     return encoder_tokens, decoder_tokens, target_tokens
 
 
-def my_transform(tokens, maxlen, error_tokens, shuffle=False):
+def my_transform(tokens, maxlen, error_tokens, shuffle=False,reverse=False):
     """Transform tokens into model inputs and targets.
     All inputs and targets are padded to maxlen with EOS character.
     """
@@ -237,8 +238,9 @@ def my_transform(tokens, maxlen, error_tokens, shuffle=False):
         encoder = error_tokens[token] # error_tokens is a dict mapping correct
                                       # tokens to possible errorful tokens
         encoder += EOS * (maxlen - len(encoder)) # Padded to maxlen.
+        if reverse: encoder = encoder[::-1]
         encoder_tokens.append(encoder)
-    
+
         decoder = SOS + token
         decoder += EOS * (maxlen - len(decoder))
         decoder_tokens.append(decoder)
@@ -273,7 +275,7 @@ def batch_triplet(token_triplets, maxlen, ctable, batch_size=128):
     def generate(token_triplets):
         while(True): # This flag yields an infinite generator.
             for token_triplet in token_triplets: yield token_triplet
-    token_iterator = generate(val)
+    token_iterator = generate(token_triplets)
     data_batch = np.zeros((batch_size, 3, maxlen, ctable.size), dtype=np.float32)
     while(True):
         for i in range(batch_size):
@@ -313,11 +315,11 @@ def datagen_triplet(encoder_iter, decoder_iter, target_iter):
     """Utility function to load data into required model format."""
     inputs = zip(encoder_iter, decoder_iter)
     while(True):
-        encoder_input, decoder_input = next(inputs)
+        x0, decoder_input = next(inputs)
         x1, blank = next(inputs)
         x2, blank = next(inputs)
         target = next(target_iter)
-        yield ([encoder_input,x1,x2, decoder_input], target)
+        yield ([x0,x1,x2, decoder_input], target)
 
 def decode_sequences(inputs, targets, input_ctable, target_ctable,
                      maxlen, reverse, encoder_model, decoder_model,
