@@ -5,7 +5,7 @@ np.random.seed(1234)
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 from utils import CharacterTable, transform
-from utils import batch, datagen, decode_sequences
+from utils import batch, datagen, datagen_simple, decode_sequences
 #from utils import read_text, tokenize
 from utils import restore_model
 from model import seq2seq
@@ -73,7 +73,7 @@ print(model.summary())
 maxlen = max([len(token) for token in train_tokens]) + 2
 
 # Train and evaluate.
-for epoch in range(model_cnt,100):
+for epoch in range(model_cnt,1):
     print('Main Epoch {:d}/{:d}'.format(epoch + 1, nb_epochs))
 
     #train_encoder, train_decoder, train_target = transform(
@@ -87,63 +87,58 @@ for epoch in range(model_cnt,100):
     val_encoder, val_decoder, val_target = transform2( val_tokens[sv_ind:ev_ind], maxlen, shuffle=False, dec_tokens=val_dec_tokens[sv_ind:ev_ind])
 
     train_encoder_batch = batch(train_encoder, maxlen, input_ctable, train_batch_size, reverse)
-    train_decoder_batch = batch(train_decoder, maxlen, target_ctable, train_batch_size)
     train_target_batch  = batch(train_target, maxlen, target_ctable, train_batch_size)    
 
     val_encoder_batch = batch(val_encoder, maxlen, input_ctable, val_batch_size, reverse)
-    val_decoder_batch = batch(val_decoder, maxlen, target_ctable, val_batch_size)
     val_target_batch  = batch(val_target, maxlen, target_ctable, val_batch_size)
+    train_loader = datagen_simple(train_encoder_batch, train_target_batch)
+    val_loader = datagen(val_encoder_batch, val_target_batch)
 
-    train_loader = datagen(train_encoder_batch,
-                           train_decoder_batch, train_target_batch)
-    val_loader = datagen(val_encoder_batch,
-                         val_decoder_batch, val_target_batch)
-
-    history = model.fit(train_loader,
-                        steps_per_epoch=train_steps,
-                        epochs=1, verbose=1,
-                        validation_data=val_loader,
-                        validation_steps=val_steps)
-
-   # On epoch end - decode a batch of misspelled tokens from the
-   # validation set to visualize speller performance.
-    nb_tokens = 5
-    input_tokens, target_tokens, decoded_tokens = decode_sequences(
-        val_encoder, val_target, input_ctable, target_ctable,
-        maxlen, reverse, encoder_model, decoder_model, nb_tokens,
-        sample_mode=sample_mode, random=False)
-    
-    print('-')
-    print('Input tokens:  ', input_tokens)
-    print('Decoded tokens:', decoded_tokens)
-    print('Target tokens: ', target_tokens)
-    print('-')
-
-    # Save the model at end of each epoch.
-    model_file = '_'.join(['seq2seq', 'epoch', str(epoch + 1)]) + '.h5'
-    save_dir = 'checkpoints'
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    save_path = os.path.join(save_dir, model_file)
-    print('Saving full model to {:s}'.format(save_path))
-    model.save(save_path)
-    fn = 'history_with_trunc.txt'
-    #for history in score:
-    with open(fn,'a') as f:
-        f.write(str(history.history['loss'][0]) + ',')
-        #f.write(str(history.history['truncated_loss'][0]) + ',')
-        f.write(str(history.history['val_loss'][0]) + ',')
-        #f.write(str(history.history['val_truncated_loss'][0]) + ',')
-        f.write(str(history.history['accuracy'][0]) + ',')
-        #f.write(str(history.history['truncated_acc'][0]) + ',')
-        f.write(str(history.history['val_accuracy'][0]) + ',')
-        #f.write(str(history.history['val_truncated_acc'][0]) + ',')
-        #f.write(str(history.history['precision'][0]) + ',')
-        f.write(str(history.history['recall'][0]) + ',')
-        f.write(str(history.history['f1_score'][0])+',')
-        #f.write(str(history.history['val_precision'][0]) + ',')
-        f.write(str(history.history['val_recall'][0]) + ',')
-        f.write(str(history.history['val_f1_score'][0]))
-       
-        f.write('\n')
-
+#    history = model.fit(train_loader,
+#                        steps_per_epoch=train_steps,
+#                        epochs=1, verbose=1,
+#                        validation_data=val_loader,
+#                        validation_steps=val_steps)
+#
+#   # On epoch end - decode a batch of misspelled tokens from the
+#   # validation set to visualize speller performance.
+#    nb_tokens = 5
+#    input_tokens, target_tokens, decoded_tokens = decode_sequences(
+#        val_encoder, val_target, input_ctable, target_ctable,
+#        maxlen, reverse, encoder_model, decoder_model, nb_tokens,
+#        sample_mode=sample_mode, random=False)
+#    
+#    print('-')
+#    print('Input tokens:  ', input_tokens)
+#    print('Decoded tokens:', decoded_tokens)
+#    print('Target tokens: ', target_tokens)
+#    print('-')
+#
+#    # Save the model at end of each epoch.
+#    model_file = '_'.join(['seq2seq', 'epoch', str(epoch + 1)]) + '.h5'
+#    save_dir = 'checkpoints'
+#    if not os.path.exists(save_dir):
+#        os.makedirs(save_dir)
+#    save_path = os.path.join(save_dir, model_file)
+#    print('Saving full model to {:s}'.format(save_path))
+#    model.save(save_path)
+#    fn = 'history_with_trunc.txt'
+#    #for history in score:
+#    with open(fn,'a') as f:
+#        f.write(str(history.history['loss'][0]) + ',')
+#        #f.write(str(history.history['truncated_loss'][0]) + ',')
+#        f.write(str(history.history['val_loss'][0]) + ',')
+#        #f.write(str(history.history['val_truncated_loss'][0]) + ',')
+#        f.write(str(history.history['accuracy'][0]) + ',')
+#        #f.write(str(history.history['truncated_acc'][0]) + ',')
+#        f.write(str(history.history['val_accuracy'][0]) + ',')
+#        #f.write(str(history.history['val_truncated_acc'][0]) + ',')
+#        #f.write(str(history.history['precision'][0]) + ',')
+#        f.write(str(history.history['recall'][0]) + ',')
+#        f.write(str(history.history['f1_score'][0])+',')
+#        #f.write(str(history.history['val_precision'][0]) + ',')
+#        f.write(str(history.history['val_recall'][0]) + ',')
+#        f.write(str(history.history['val_f1_score'][0]))
+#       
+#        f.write('\n')
+##

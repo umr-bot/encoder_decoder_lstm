@@ -36,6 +36,12 @@ with open("eng_data_common_misspellings/folds/eng_za_trigrams/fold1/val") as f:
 with open("eng_data_common_misspellings/folds/eng_za_trigrams/norm_fold1/val") as f:
     norm_val = [line.strip('\n').split() for line in f]
 
+factor=100
+train = train[:int(len(train)/factor)]
+norm_train = norm_train[:int(len(norm_train)/factor)]
+val = val[:int(len(val)/factor)]
+norm_val = norm_val[:int(len(norm_val)/factor)]
+
 # Split trigrams into individual lists
 train_tokens,train_dec_tokens = [[],[],[]],[[],[],[]]
 for i in tqdm(range(3), desc="Split train trigrams"):
@@ -66,8 +72,8 @@ model_cnt=0
 print(model.summary())
 
 # Train and evaluate.
-for epoch in range(model_cnt,100):
-    print('Main Epoch {:d}/{:d}'.format(epoch + 1, nb_epochs))
+for epoch in range(model_cnt,1):
+#    print('Main Epoch {:d}/{:d}'.format(epoch + 1, nb_epochs))
 
     st_ind,et_ind = int(len(train_tokens[0]) * (epoch/100)), int(len(train_tokens[0])*((epoch+1)/100))
     sv_ind,ev_ind = int(len(val_tokens[0]) * (epoch/100)), int(len(val_tokens[0])*((epoch+1)/100))
@@ -92,37 +98,37 @@ for epoch in range(model_cnt,100):
 
     val_loader = datagen_triplet(val_encoder_batch, val_decoder_batch, val_target_batch)
     
-    history = model.fit(train_loader,
-                    steps_per_epoch=train_steps,
-                    epochs=1, verbose=1,
-                    validation_data=val_loader,
-                    validation_steps=val_steps)
-
-    # Save the model at end of each epoch.
-    model_file = '_'.join(['seq2seq', 'epoch', str(epoch + 1)]) + '.h5'
-    save_dir = 'checkpoints'
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    save_path = os.path.join(save_dir, model_file)
-    print('Saving full model to {:s}'.format(save_path))
-    model.save(save_path)
-    fn = 'history_with_trunc.txt'
-    #for history in score:
-    with open(fn,'a') as f:
-        f.write(str(history.history['loss'][0]) + ',')
-        #f.write(str(history.history['truncated_loss'][0]) + ',')
-        f.write(str(history.history['val_loss'][0]) + ',')
-        #f.write(str(history.history['val_truncated_loss'][0]) + ',')
-        f.write(str(history.history['accuracy'][0]) + ',')
-        #f.write(str(history.history['truncated_acc'][0]) + ',')
-        f.write(str(history.history['val_accuracy'][0]) + ',')
-        #f.write(str(history.history['val_truncated_acc'][0]) + ',')
-        #f.write(str(history.history['precision'][0]) + ',')
-        f.write(str(history.history['recall'][0]) + ',')
-        f.write(str(history.history['f1_score'][0])+',')
-        #f.write(str(history.history['val_precision'][0]) + ',')
-        f.write(str(history.history['val_recall'][0]) + ',')
-        f.write(str(history.history['val_f1_score'][0]))
-
-        f.write('\n')
-
+#    history = model.fit(train_loader,
+#                    steps_per_epoch=train_steps,
+#                    epochs=1, verbose=1,
+#                    validation_data=val_loader,
+#                    validation_steps=val_steps)
+#
+#    # Save the model at end of each epoch.
+#    model_file = '_'.join(['seq2seq', 'epoch', str(epoch + 1)]) + '.h5'
+#    save_dir = 'checkpoints'
+#    if not os.path.exists(save_dir):
+#        os.makedirs(save_dir)
+#    save_path = os.path.join(save_dir, model_file)
+#    print('Saving full model to {:s}'.format(save_path))
+#    model.save(save_path)
+#    fn = 'history_with_trunc.txt'
+#    #for history in score:
+#    with open(fn,'a') as f:
+#        f.write(str(history.history['loss'][0]) + ',')
+#        #f.write(str(history.history['truncated_loss'][0]) + ',')
+#        f.write(str(history.history['val_loss'][0]) + ',')
+#        #f.write(str(history.history['val_truncated_loss'][0]) + ',')
+#        f.write(str(history.history['accuracy'][0]) + ',')
+#        #f.write(str(history.history['truncated_acc'][0]) + ',')
+#        f.write(str(history.history['val_accuracy'][0]) + ',')
+#        #f.write(str(history.history['val_truncated_acc'][0]) + ',')
+#        #f.write(str(history.history['precision'][0]) + ',')
+#        f.write(str(history.history['recall'][0]) + ',')
+#        f.write(str(history.history['f1_score'][0])+',')
+#        #f.write(str(history.history['val_precision'][0]) + ',')
+#        f.write(str(history.history['val_recall'][0]) + ',')
+#        f.write(str(history.history['val_f1_score'][0]))
+#
+#        f.write('\n')
+#

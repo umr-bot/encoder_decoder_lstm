@@ -302,6 +302,12 @@ def batch_bigram(token_pairs, maxlen, ctable, batch_size=128, reverse=False):
             #except: print(token)
         yield data_batch
 
+def datagen_simple(input_iter, target_iter):
+    """Utility function to load data into required model format."""
+    while(True):
+        input_ = next(input_iter)
+        target = next(target_iter)
+        yield (input_, target)
 
 def datagen(encoder_iter, decoder_iter, target_iter):
     """Utility function to load data into required model format."""
