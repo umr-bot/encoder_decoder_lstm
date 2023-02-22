@@ -9,7 +9,7 @@ from utils import batch, datagen, datagen_simple, decode_sequences
 #from utils import read_text, tokenize
 from utils import restore_model
 from model import seq2seq
-
+from simple_model import simple_lstm
 from utils import transform2, get_type_lists
 
 #error_rate = 0.8
@@ -43,29 +43,17 @@ with open("eng_data_common_misspellings/folds/enc_dec_folds/enc_dec_fold1/val") 
 val_dec_tokens, val_tokens = zip(*val_tups)
 
 input_chars = set(' '.join(train_tokens) + '*' + '\t') # * and \t are EOS and SOS respectively
-target_chars = set(' '.join(train_dec_tokens) + '*' + '\t')
 nb_input_chars = len(input_chars)
-nb_target_chars = len(target_chars)
 # Define training and evaluation configuration.
 input_ctable  = CharacterTable(input_chars)
-target_ctable = CharacterTable(target_chars)
 
 train_steps = len(train_tokens) // train_batch_size
 val_steps = len(val_tokens) // val_batch_size
 print("Number of train_steps:",train_steps)
 print("Number of val_steps:",val_steps)
 
-copy_val_tokens,copy_val_dec_tokens=[],[]
-#chrs = input_chars.union(target_chars)
-for i in range(len(val_tokens)):
-    tok,dec_tok = val_tokens[i], val_dec_tokens[i]
-    if set(tok).issubset(input_chars) and set(dec_tok).issubset(target_chars):
-        copy_val_tokens.append(tok)
-        copy_val_dec_tokens.append(dec_tok)
-val_tokens, val_dec_tokens = copy_val_tokens,copy_val_dec_tokens
-
 # Compile the model.
-model, encoder_model, decoder_model = seq2seq(hidden_size, nb_input_chars, nb_target_chars)
+model = simple_lstm(hidden_size, nb_input_chars)
 model_cnt=0
 #model, encoder_model, decoder_model = restore_model("checkpoints/seq2seq_epoch_"+str(model_cnt)+".h5",hidden_size)
 print(model.summary())
@@ -92,13 +80,13 @@ for epoch in range(model_cnt,1):
     val_encoder_batch = batch(val_encoder, maxlen, input_ctable, val_batch_size, reverse)
     val_target_batch  = batch(val_target, maxlen, target_ctable, val_batch_size)
     train_loader = datagen_simple(train_encoder_batch, train_target_batch)
-    val_loader = datagen(val_encoder_batch, val_target_batch)
+    val_loader = datagen_simple(val_encoder_batch, val_target_batch)
 
-#    history = model.fit(train_loader,
-#                        steps_per_epoch=train_steps,
-#                        epochs=1, verbose=1,
-#                        validation_data=val_loader,
-#                        validation_steps=val_steps)
+    history = model.fit(train_loader,
+                        steps_per_epoch=train_steps,
+                        epochs=1, verbose=1,
+                        validation_data=val_loader,
+                        validation_steps=val_steps)
 #
 #   # On epoch end - decode a batch of misspelled tokens from the
 #   # validation set to visualize speller performance.
@@ -114,31 +102,31 @@ for epoch in range(model_cnt,1):
 #    print('Target tokens: ', target_tokens)
 #    print('-')
 #
-#    # Save the model at end of each epoch.
-#    model_file = '_'.join(['seq2seq', 'epoch', str(epoch + 1)]) + '.h5'
-#    save_dir = 'checkpoints'
-#    if not os.path.exists(save_dir):
-#        os.makedirs(save_dir)
-#    save_path = os.path.join(save_dir, model_file)
-#    print('Saving full model to {:s}'.format(save_path))
-#    model.save(save_path)
-#    fn = 'history_with_trunc.txt'
-#    #for history in score:
-#    with open(fn,'a') as f:
-#        f.write(str(history.history['loss'][0]) + ',')
-#        #f.write(str(history.history['truncated_loss'][0]) + ',')
-#        f.write(str(history.history['val_loss'][0]) + ',')
-#        #f.write(str(history.history['val_truncated_loss'][0]) + ',')
-#        f.write(str(history.history['accuracy'][0]) + ',')
-#        #f.write(str(history.history['truncated_acc'][0]) + ',')
-#        f.write(str(history.history['val_accuracy'][0]) + ',')
-#        #f.write(str(history.history['val_truncated_acc'][0]) + ',')
-#        #f.write(str(history.history['precision'][0]) + ',')
-#        f.write(str(history.history['recall'][0]) + ',')
-#        f.write(str(history.history['f1_score'][0])+',')
-#        #f.write(str(history.history['val_precision'][0]) + ',')
-#        f.write(str(history.history['val_recall'][0]) + ',')
-#        f.write(str(history.history['val_f1_score'][0]))
-#       
-#        f.write('\n')
-##
+    # Save the model at end of each epoch.
+    model_file = '_'.join(['lstm', 'epoch', str(epoch + 1)]) + '.h5'
+    save_dir = 'simple_lstm_checkpoints_4'
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    save_path = os.path.join(save_dir, model_file)
+    print('Saving full model to {:s}'.format(save_path))
+    model.save(save_path)
+    fn = 'history_with_trunc.txt'
+    #for history in score:
+    with open(fn,'a') as f:
+        f.write(str(history.history['loss'][0]) + ',')
+        #f.write(str(history.history['truncated_loss'][0]) + ',')
+        f.write(str(history.history['val_loss'][0]) + ',')
+        #f.write(str(history.history['val_truncated_loss'][0]) + ',')
+        f.write(str(history.history['accuracy'][0]) + ',')
+        #f.write(str(history.history['truncated_acc'][0]) + ',')
+        f.write(str(history.history['val_accuracy'][0]) + ',')
+        #f.write(str(history.history['val_truncated_acc'][0]) + ',')
+        #f.write(str(history.history['precision'][0]) + ',')
+        f.write(str(history.history['recall'][0]) + ',')
+        f.write(str(history.history['f1_score'][0])+',')
+        #f.write(str(history.history['val_precision'][0]) + ',')
+        f.write(str(history.history['val_recall'][0]) + ',')
+        f.write(str(history.history['val_f1_score'][0]))
+       
+        f.write('\n')
+#
