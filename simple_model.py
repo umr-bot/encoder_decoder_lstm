@@ -10,12 +10,17 @@ def simple_lstm(hidden_size, nb_target_chars):
 # We set up our decoder to return full output sequences,
 # and to return internal states as well. We don't use the return
 # states in the training model, but we will use them in inference.
-    decoder_lstm = LSTM(hidden_size, dropout=0.2, return_sequences=True,
-                        return_state=True, name='decoder_lstm')
-    decoder_outputs, _, _ = decoder_lstm(decoder_inputs)
+    decoder_lstm = LSTM(hidden_size, return_sequences=True,
+                        return_state=True, name='decoder_lstm_1')
+    decoder_outputs_1 = decoder_lstm(decoder_inputs)
+    # Note stacked LTSM must have last layer with return_Sequences=False
+    decoder_lstm = LSTM(hidden_size, return_sequences=True,
+                        return_state=False, name='decoder_lstm_2')
+    decoder_outputs_2, state_h, state_c  = decoder_lstm(decoder_outputs_1)
+    decoder_states = [state_h, state_c]
     decoder_softmax = Dense(nb_target_chars, activation='softmax',
                             name='decoder_softmax')
-    decoder_outputs = decoder_softmax(decoder_outputs)
+    decoder_outputs = decoder_softmax(decoder_outputs_2)
 
 # The main model will turn `encoder_input_data` & `decoder_input_data`
 # into `decoder_target_data`
