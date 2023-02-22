@@ -117,11 +117,13 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
                         name='encoder_lstm_2')
     #NOTE: last lstm layer should have return_state=True
     # here encoder outputs contains all state_h 's including the returned one
-    encoder_outputs_2, state_h, state_c = encoder_lstm_2(encoder_outputs_1)
+    encoder_outputs_2, encoder_state_h, encoder_state_c = encoder_lstm_2(encoder_outputs_1)
 
     # We discard `encoder_outputs` and only keep the states.
-    encoder_states = [state_h, state_c]
-
+    encoder_states = [encoder_state_h, encoder_state_c]
+    # Set up the attention layer
+    attention= BahdanauAttention(hidden_size, verbose=verbose)
+    
     # Set up the decoder, using `encoder_states` as initial state.
     decoder_inputs = Input(shape=(None, nb_target_chars),
                            name='decoder_data')
@@ -130,13 +132,13 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     # states in the training model, but we will use them in inference.
     decoder_lstm = LSTM(hidden_size, dropout=0.2, return_sequences=True,
                         return_state=True, name='decoder_lstm')
-    decoder_outputs, _, _ = decoder_lstm(decoder_inputs,
-                                         initial_state=encoder_states)
-    decoder_outputs = attention()(decoder_outputs)
-    decoder_softmax = Dense(nb_target_chars, trainable=True, activation='softmax',
+    decoder_outputs, _, _ = decoder_lstm(decoder_inputs, initial_state=encoder_states)
+    context_vector, attention_weights=attention(decoder_outputs, encoder_outputs_2)
+
+    decoder_softmax = Dense(nb_target_chars, activation='softmax',
                             name='decoder_softmax')
     decoder_outputs = decoder_softmax(decoder_outputs)
-
+    
     # The main model will turn `encoder_input_data` & `decoder_input_data`
     # into `decoder_target_data`
     model = Model(inputs=[encoder_inputs, decoder_inputs],
