@@ -1,6 +1,6 @@
 import tensorflow
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, LSTM, Dense, Dropout
+from tensorflow.keras.layers import Input, LSTM, Dense, Dropout, Layer
 from tensorflow.keras import optimizers, metrics, backend as K
 # For use with truncated metrics,
 # take maxlen from the validation set.
@@ -50,26 +50,31 @@ def f1_score(y_true, y_pred):
     rec = recall(y_true, y_pred)
     return 2*((prec*rec)/(prec+rec+K.epsilon()))
 
-#class MulticlassTruePositives(tensorflow.keras.metrics.Metric):
-#    def __init__(self, name='multiclass_true_positives', **kwargs):
-#        super(MulticlassTruePositives, self).__init__(name=name, **kwargs)
-#        self.true_positives = self.add_weight(name='tp', initializer='zeros')
-#
-#    def update_state(self, y_true, y_pred, sample_weight=None):
-#        y_pred = tensorflow.reshape(tensorflow.argmax(y_pred, axis=1), shape=(-1, 1, 1))
-#        values = tensorflow.cast(y_true, 'int32') == tensorflow.cast(y_pred, 'int32')
-#        values = tensorflow.cast(values, 'float32')
-#        if sample_weight is not None:
-#            sample_weight = tensorflow.cast(sample_weight, 'float32')
-#            values = tensorflow.multiply(values, sample_weight)
-#        self.true_positives.assign_add(tensorflow.reduce_sum(values))
-#
-#    def result(self):
-#        return self.true_positives
-#
-#    def reset_states(self):
-#        # The state of the metric will be reset at the start of each epoch.
-#        self.true_positives.assign(0.)
+# Add attention layer to the deep learning network
+class attention(Layer):
+    def __init__(self,**kwargs):
+        super(attention,self).__init__(**kwargs)
+
+    def build(self,input_shape):
+        self.W=self.add_weight(name='attention_weight', shape=(input_shape[-1],1),
+                               initializer='random_normal', trainable=True)
+        self.b=self.add_weight(name='attention_bias', shape=(input_shape[1],1),
+                               initializer='zeros', trainable=True)
+        super(attention, self).build(input_shape)
+
+    def call(self,x):
+        # Alignment scores. Pass them through tanh function
+        e = K.tanh(K.dot(x,self.W)+self.b)
+        # Remove dimension of size 1
+        e = K.squeeze(e, axis=-1)
+        # Compute the weights
+        alpha = K.softmax(e)
+        # Reshape to tensorFlow format
+        alpha = K.expand_dims(alpha, axis=-1)
+        # Compute the context vector
+        context = x * alpha
+        context = K.sum(context, axis=1)
+        return context
 
 def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     """Adapted from:
@@ -109,7 +114,8 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
                         return_state=True, name='decoder_lstm')
     decoder_outputs, _, _ = decoder_lstm(decoder_inputs,
                                          initial_state=encoder_states)
-    decoder_softmax = Dense(nb_target_chars, activation='softmax',
+    decoder_outputs = attention()(decoder_outputs)
+    decoder_softmax = Dense(nb_target_chars, trainable=True, activation='softmax',
                             name='decoder_softmax')
     decoder_outputs = decoder_softmax(decoder_outputs)
 
