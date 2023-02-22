@@ -50,31 +50,49 @@ def f1_score(y_true, y_pred):
     rec = recall(y_true, y_pred)
     return 2*((prec*rec)/(prec+rec+K.epsilon()))
 
-# Add attention layer to the deep learning network
-class attention(Layer):
-    def __init__(self,**kwargs):
-        super(attention,self).__init__(**kwargs)
+class BahdanauAttention(tf.keras.layers.Layer):
+  def __init__(self, units, verbose=0):
+    super(BahdanauAttention, self).__init__()
+    self.W1 = tf.keras.layers.Dense(units)
+    self.W2 = tf.keras.layers.Dense(units)
+    self.V = tf.keras.layers.Dense(1)
+    self.verbose= verbose
 
-    def build(self,input_shape):
-        self.W=self.add_weight(name='attention_weight', shape=(input_shape[-1],1),
-                               initializer='random_normal', trainable=True)
-        self.b=self.add_weight(name='attention_bias', shape=(input_shape[1],1),
-                               initializer='zeros', trainable=True)
-        super(attention, self).build(input_shape)
+  def call(self, query, values):
+    if self.verbose:
+      print('\n******* Bahdanau Attention STARTS******')
+      print('query (decoder hidden state): (batch_size, hidden size) ', query.shape)
+      print('values (encoder all hidden state): (batch_size, max_len, hidden size) ', values.shape)
 
-    def call(self,x):
-        # Alignment scores. Pass them through tanh function
-        e = K.tanh(K.dot(x,self.W)+self.b)
-        # Remove dimension of size 1
-        e = K.squeeze(e, axis=-1)
-        # Compute the weights
-        alpha = K.softmax(e)
-        # Reshape to tensorFlow format
-        alpha = K.expand_dims(alpha, axis=-1)
-        # Compute the context vector
-        context = x * alpha
-        context = K.sum(context, axis=1)
-        return context
+    # query hidden state shape == (batch_size, hidden size)
+    # query_with_time_axis shape == (batch_size, 1, hidden size)
+    # values shape == (batch_size, max_len, hidden size)
+    # we are doing this to broadcast addition along the time axis to calculate the score
+    query_with_time_axis = tf.expand_dims(query, 1)
+    
+    if self.verbose:
+      print('query_with_time_axis:(batch_size, 1, hidden size) ', query_with_time_axis.shape)
+
+    # score shape == (batch_size, max_length, 1)
+    # we get 1 at the last axis because we are applying score to self.V
+    # the shape of the tensor before applying self.V is (batch_size, max_length, units)
+    score = self.V(tf.nn.tanh(
+        self.W1(query_with_time_axis) + self.W2(values)))
+    if self.verbose:
+      print('score: (batch_size, max_length, 1) ',score.shape)
+    # attention_weights shape == (batch_size, max_length, 1)
+    attention_weights = tf.nn.softmax(score, axis=1)
+    if self.verbose:
+      print('attention_weights: (batch_size, max_length, 1) ',attention_weights.shape)
+    # context_vector shape after sum == (batch_size, hidden_size)
+    context_vector = attention_weights * values
+    if self.verbose:
+      print('context_vector before reduce_sum: (batch_size, max_length, hidden_size) ',context_vector.shape)
+    context_vector = tf.reduce_sum(context_vector, axis=1)
+    if self.verbose:
+      print('context_vector after reduce_sum: (batch_size, hidden_size) ',context_vector.shape)
+      print('\n******* Bahdanau Attention ENDS******')
+    return context_vector, attention_weights
 
 def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     """Adapted from:
