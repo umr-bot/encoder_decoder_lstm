@@ -15,16 +15,19 @@ def simple_lstm(hidden_size, nb_target_chars):
     decoder_outputs_1 = decoder_lstm(decoder_inputs)
     # Note stacked LTSM must have last layer with return_Sequences=False
     decoder_lstm = LSTM(hidden_size, return_sequences=True,
-                        return_state=False, name='decoder_lstm_2')
-    decoder_outputs_2, state_h, state_c  = decoder_lstm(decoder_outputs_1)
-    decoder_states = [state_h, state_c]
+                        return_state=True, name='decoder_lstm_2')
+    decoder_outputs_2  = decoder_lstm(decoder_outputs_1)
+    decoder_lstm = LSTM(hidden_size, return_sequences=True,
+                        return_state=False, name='decoder_lstm_3')
+    decoder_outputs_3  = decoder_lstm(decoder_outputs_2)
+
     decoder_softmax = Dense(nb_target_chars, activation='softmax',
                             name='decoder_softmax')
-    decoder_outputs = decoder_softmax(decoder_outputs_2)
+    decoder_outputs = decoder_softmax(decoder_outputs_3)
 
 # The main model will turn `encoder_input_data` & `decoder_input_data`
 # into `decoder_target_data`
-    model = Model(inputs=[decoder_inputs],
+    model = Model(inputs=decoder_inputs,
                   outputs=decoder_outputs)
 
 #adam = tensorflow.keras.optimizers.Adam(lr=0.001, decay=0.0)
