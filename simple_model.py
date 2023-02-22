@@ -1,7 +1,33 @@
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, LSTM, Dense, Dropout
+from tensorflow.keras.layers import Input, LSTM, Dense, Dropout, Layer
 from tensorflow.keras import optimizers, metrics, backend as K
 from model import recall, f1_score
+
+# Add attention layer to the deep learning network
+class attention(Layer):
+    def __init__(self,**kwargs):
+        super(attention,self).__init__(**kwargs)
+
+    def build(self,input_shape):
+        self.W=self.add_weight(name='attention_weight', shape=(input_shape[-1],1), 
+                               initializer='random_normal', trainable=True)
+        self.b=self.add_weight(name='attention_bias', shape=(input_shape[1],1), 
+                               initializer='zeros', trainable=True)        
+        super(attention, self).build(input_shape)
+
+    def call(self,x):
+        # Alignment scores. Pass them through tanh function
+        e = K.tanh(K.dot(x,self.W)+self.b)
+        # Remove dimension of size 1
+        e = K.squeeze(e, axis=-1)   
+        # Compute the weights
+        alpha = K.softmax(e)
+        # Reshape to tensorFlow format
+        alpha = K.expand_dims(alpha, axis=-1)
+        # Compute the context vector
+        context = x * alpha
+        context = K.sum(context, axis=1)
+        return context
 
 def simple_lstm(hidden_size, nb_target_chars):
 
@@ -20,10 +46,10 @@ def simple_lstm(hidden_size, nb_target_chars):
     decoder_lstm = LSTM(hidden_size, return_sequences=True,
                         return_state=False, name='decoder_lstm_3')
     decoder_outputs_3  = decoder_lstm(decoder_outputs_2)
-
+    decoder_outputs = attention()(decoder_outputs_3)
     decoder_softmax = Dense(nb_target_chars, activation='softmax',
                             name='decoder_softmax')
-    decoder_outputs = decoder_softmax(decoder_outputs_3)
+    decoder_outputs = decoder_softmax(decoder_outputs)
 
 # The main model will turn `encoder_input_data` & `decoder_input_data`
 # into `decoder_target_data`
