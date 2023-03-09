@@ -120,7 +120,7 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     
     #adam = tensorflow.keras.optimizers.Adam(lr=0.001, decay=0.0)
     model.compile(optimizer='adam', loss='categorical_crossentropy',
-                metrics=['accuracy', recall, f1_score])
+                metrics=['accuracy', recall, f1_score], run_eagerly=True)
                   #metrics=['accuracy', truncated_acc, truncated_loss, recall, precision, f1_score])
     ################################################################################### 
     # The encoder_model and decoder_models defined below are used when evaluating/using model

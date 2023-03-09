@@ -3,7 +3,7 @@ import numpy as np
 
 np.random.seed(1234)
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-
+import tensorflow
 from utils import CharacterTable, transform
 from utils import batch, datagen, decode_sequences
 #from utils import read_text, tokenize
@@ -98,7 +98,7 @@ for epoch in range(model_cnt,100):
                            train_decoder_batch, train_target_batch)
     val_loader = datagen(val_encoder_batch,
                          val_decoder_batch, val_target_batch)
-
+    tensorflow.config.run_functions_eagerly(True)
     history = model.fit(train_loader,
                         steps_per_epoch=train_steps,
                         epochs=1, verbose=1,

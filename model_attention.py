@@ -1,4 +1,4 @@
-import tensorflow
+import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, LSTM, Dense, Dropout, Layer
 from tensorflow.keras import optimizers, metrics, backend as K
@@ -122,7 +122,7 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     # We discard `encoder_outputs` and only keep the states.
     encoder_states = [encoder_state_h, encoder_state_c]
     # Set up the attention layer
-    attention= BahdanauAttention(hidden_size, verbose=verbose)
+    attention= BahdanauAttention(hidden_size)
     
     # Set up the decoder, using `encoder_states` as initial state.
     decoder_inputs = Input(shape=(None, nb_target_chars),

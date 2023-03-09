@@ -61,7 +61,7 @@ print(model.summary())
 maxlen = max([len(token) for token in train_tokens]) + 2
 
 # Train and evaluate.
-for epoch in range(model_cnt,1):
+for epoch in range(model_cnt,100):
     print('Main Epoch {:d}/{:d}'.format(epoch + 1, nb_epochs))
 
     #train_encoder, train_decoder, train_target = transform(
@@ -74,13 +74,16 @@ for epoch in range(model_cnt,1):
     
     val_encoder, val_decoder, val_target = transform2( val_tokens[sv_ind:ev_ind], maxlen, shuffle=False, dec_tokens=val_dec_tokens[sv_ind:ev_ind])
 
-    train_encoder_batch = batch(train_encoder, maxlen, input_ctable, train_batch_size, reverse)
-    train_target_batch  = batch(train_target, maxlen, target_ctable, train_batch_size)    
+    #train_encoder_batch = batch(train_encoder, maxlen, input_ctable, train_batch_size, reverse)
+    train_decoder_batch = batch(train_decoder, maxlen, input_ctable, train_batch_size)
+    train_target_batch  = batch(train_target, maxlen, input_ctable, train_batch_size)    
 
-    val_encoder_batch = batch(val_encoder, maxlen, input_ctable, val_batch_size, reverse)
-    val_target_batch  = batch(val_target, maxlen, target_ctable, val_batch_size)
-    train_loader = datagen_simple(train_encoder_batch, train_target_batch)
-    val_loader = datagen_simple(val_encoder_batch, val_target_batch)
+    #val_encoder_batch = batch(val_encoder, maxlen, input_ctable, val_batch_size, reverse)
+    val_decoder_batch = batch(val_decoder, maxlen, input_ctable, val_batch_size)
+    val_target_batch  = batch(val_target, maxlen, input_ctable, val_batch_size)
+    
+    train_loader = datagen_simple(train_decoder_batch, train_target_batch)
+    val_loader = datagen_simple(val_decoder_batch, val_target_batch)
 
     history = model.fit(train_loader,
                         steps_per_epoch=train_steps,
@@ -104,7 +107,7 @@ for epoch in range(model_cnt,1):
 #
     # Save the model at end of each epoch.
     model_file = '_'.join(['lstm', 'epoch', str(epoch + 1)]) + '.h5'
-    save_dir = 'simple_lstm_checkpoints_4'
+    save_dir = 'simple_lstm_checkpoints_5'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_path = os.path.join(save_dir, model_file)

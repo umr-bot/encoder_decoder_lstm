@@ -43,7 +43,8 @@ class CharacterTable(object):
         """
         x = np.zeros((nb_rows, len(self.chars)), dtype=np.float32)
         for i, c in enumerate(C):
-            x[i, self.char2index[c]] = 1.0
+            try: x[i, self.char2index[c]] = 1.0
+            except: x[i, self.char2index['a']] = 1.0
         return x
 
     def decode(self, x, calc_argmax=True):
@@ -413,8 +414,6 @@ def restore_model(path_to_full_model, hidden_size, lstm_2_flag=True):
     model = load_model(path_to_full_model, custom_objects={
         'truncated_acc': truncated_acc, 'truncated_loss': truncated_loss, 'recall': recall, "precision": precision, "f1_score": f1_score})
     
-    lstm_2_flag=False
-
     encoder_inputs = model.input[0] # encoder_data
     encoder_lstm1 = model.get_layer('encoder_lstm_1')
     if lstm_2_flag==True: encoder_lstm2 = model.get_layer('encoder_lstm_2')
