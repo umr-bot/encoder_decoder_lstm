@@ -6,6 +6,7 @@ with open("eng_za/trigram_tokens") as f:
     tris=[]
     for line in f:
         tris.append([tok for tok in line.strip('\n').split(',') if set("[]-<>_").isdisjoint(set(tok))])
+tris = list(set(tuple(tri) for tri in tris)) # only keep types
 ####################################################
 # Create and fill trigram list of all trigrams in text
 #tris = []
