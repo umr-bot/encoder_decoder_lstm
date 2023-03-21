@@ -17,7 +17,7 @@ with open("eng_za/trigram_tokens") as f:
 parts=[[],[],[],[],[]]
 for i in range(5):
     with open("folds/part"+str(i+1)) as f:
-        parts[i] = [tuple(line.strip('\n').split(','))[1] for line in f]
+        parts[i] = [tuple(line.strip('\n').split(','))[0] for line in f]
         parts[i] = list(set(parts[i]))
 ####################################################
 # Create folds out of trigrams list and unigram folds stored in parts variable
