@@ -1,0 +1,2 @@
+Trigrams folds were manually editted by hand after running make_tris script,
+in order to balance number of trigrams across folds.

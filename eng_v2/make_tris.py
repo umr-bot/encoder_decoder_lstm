@@ -29,6 +29,20 @@ for i in range(5):
             if tri[1] == tok: folds[i].append(tri)
 
 for i in range(5):
-    with open("trigrams/foldset"+str(i+1),'w') as f:
+    with open("trigrams/fold"+str(i+1),'w') as f:
         for tri in folds[i]: f.write(tri[0]+','+tri[1]+','+tri[2]+'\n')
+# remove trigram  overlap in folds
+m = [[] for blank in range(5)]
+x = m.copy()
+for fold_cnt in range(5): m[fold_cnt] = set(tuple(tri) for tri in folds[fold_cnt])
+for i in range(5):
+    for j in range(5):
+        if m[i].isdisjoint(m[j]) == False and i!=j:
+            print("False",end=" ")
+            x[i] = m[i] - m[i].intersection(m[j])
+    print("------------")
+# sanity checkof fold independency
+for j in range(5):
+    for i in range(5): print(x[j].isdisjoint(x[i]),end=" ")
+    print("------------")    
 
