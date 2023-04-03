@@ -101,18 +101,18 @@ for epoch in range(model_cnt,1):
                         validation_steps=val_steps)
     # On epoch end - decode a batch of misspelled tokens from the
     # validation set to visualize speller performance.
-    print("Begin decoding")
-    nb_tokens = 5
-    input_tokens, target_tokens, decoded_tokens = decode_sequences(
-        val_encoder, val_target, input_ctable, target_ctable,
-        maxlen, reverse, encoder_model, decoder_model, nb_tokens,
-        sample_mode=sample_mode, random=False)
-#    
-    print('-')
-    print('Input tokens:  ', input_tokens)
-    print('Decoded tokens:', decoded_tokens)
-    print('Target tokens: ', target_tokens)
-    print('-')
+#    print("Begin decoding")
+#    nb_tokens = 5
+#    input_tokens, target_tokens, decoded_tokens = decode_sequences(
+#        val_encoder, val_target, input_ctable, target_ctable,
+#        maxlen, reverse, encoder_model, decoder_model, nb_tokens,
+#        sample_mode=sample_mode, random=False)
+##    
+#    print('-')
+#    print('Input tokens:  ', input_tokens)
+#    print('Decoded tokens:', decoded_tokens)
+#    print('Target tokens: ', target_tokens)
+#    print('-')
 
     # Save the model at end of each epoch.
     model_file = '_'.join(['seq2seq', 'epoch', str(epoch + 1)]) + '.h5'
