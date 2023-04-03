@@ -94,6 +94,47 @@ class BahdanauAttention(tf.keras.layers.Layer):
       print('\n******* Bahdanau Attention ENDS******')
     return context_vector, attention_weights
 
+@tf.keras.utils.register_keras_serializable()
+class AttentionLayer(Layer):
+
+    def __init__(self, **kwargs):
+        super(AttentionLayer, self).__init__(**kwargs)
+
+    def get_config(self):
+        config = super().get_config()
+        #config["mask"] = self.mask
+        return config
+
+    def compute_mask(self, inputs, mask=None):
+        #self.mask = mask
+        if mask == None:
+            return None
+        return mask[1]
+    def compute_output_shape(self, input_shape):
+        return (input_shape[1][0],input_shape[1][1],input_shape[1][2]*2)
+
+    def call(self, inputs, mask=None):
+        encoder_outputs, decoder_outputs = inputs
+
+        """
+        Task 3 attention
+
+        Start
+        """
+        luong_score = tf.matmul(decoder_outputs, encoder_outputs, transpose_b=True)
+        alignment = tf.nn.softmax(luong_score, axis=2)
+        context = tf.matmul(K.expand_dims(alignment,axis=2), K.expand_dims(encoder_outputs,axis=1))
+        encoder_vector = K.squeeze(context,axis=2)
+
+        """
+        End Task 3
+        """
+        # [batch,max_dec,2*emb]
+        new_decoder_outputs = K.concatenate([decoder_outputs, encoder_vector])
+        
+        return new_decoder_outputs
+
+
 def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     """Adapted from:
     https://github.com/keras-team/keras/blob/master/examples/lstm_seq2seq.py
@@ -110,7 +151,7 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
                         name='encoder_lstm_1')
     # here encoder outputs contains three things:{(all h states),(last h state),(last c state)}
     encoder_outputs_1 = encoder_lstm_1(encoder_inputs)
-    encoder_outputs, state_h, state_c = encoder_lstm_1(encoder_inputs)
+    #encoder_outputs, state_h, state_c = encoder_lstm_1(encoder_inputs)
 
     encoder_lstm_2 = LSTM(hidden_size, recurrent_dropout=0.2,
                         return_sequences=False, return_state=True,
@@ -121,8 +162,6 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
 
     # We discard `encoder_outputs` and only keep the states.
     encoder_states = [encoder_state_h, encoder_state_c]
-    # Set up the attention layer
-    attention= BahdanauAttention(hidden_size)
     
     # Set up the decoder, using `encoder_states` as initial state.
     decoder_inputs = Input(shape=(None, nb_target_chars),
@@ -133,40 +172,79 @@ def seq2seq(hidden_size, nb_input_chars, nb_target_chars):
     decoder_lstm = LSTM(hidden_size, dropout=0.2, return_sequences=True,
                         return_state=True, name='decoder_lstm')
     decoder_outputs, _, _ = decoder_lstm(decoder_inputs, initial_state=encoder_states)
-    context_vector, attention_weights=attention(decoder_outputs, encoder_outputs_2)
 
-    decoder_softmax = Dense(nb_target_chars, activation='softmax',
-                            name='decoder_softmax')
+    # Set up the attention layer -------------------------------------------
+    #attention= BahdanauAttention(hidden_size) # Bahdanau
+    #context_vector, attention_weights=attention(decoder_outputs, encoder_outputs_2)
+    #context_vector = tf.expand_dims(context_vector, axis=1)
+    #decoder_inputs = tf.expand_dims(decoder_inputs, axis=1)
+    #decoder_attention_inputs = tf.concat([context_vector, decoder_inputs], axis=-1)
+    #decoder_attention_inputs = tf.expand_dims(decoder_attention_inputs, 1)
+    #decoder_outputs, _, _ = decoder_lstm(decoder_attention_inputs)
+    # ----------------------------------------------------------------------
+    decoder_attention = AttentionLayer() #Luong
+    decoder_outputs = decoder_attention([encoder_outputs_2,decoder_outputs])
+    # --------------------------------------------
+
+
+    decoder_softmax = Dense(nb_target_chars, activation='softmax', name='decoder_softmax')
     decoder_outputs = decoder_softmax(decoder_outputs)
-    
+
     # The main model will turn `encoder_input_data` & `decoder_input_data`
     # into `decoder_target_data`
     model = Model(inputs=[encoder_inputs, decoder_inputs],
                   outputs=decoder_outputs)
     
     #adam = tensorflow.keras.optimizers.Adam(lr=0.001, decay=0.0)
-    model.compile(optimizer='adam', loss='categorical_crossentropy',
-                metrics=['accuracy', recall, f1_score])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy', recall, f1_score])
                   #metrics=['accuracy', truncated_acc, truncated_loss, recall, precision, f1_score])
     ################################################################################### 
     # The encoder_model and decoder_models defined below are used when evaluating/using model
     # Define the encoder model separately.
-    encoder_model = Model(inputs=encoder_inputs, outputs=encoder_states)
-    ####################################################################
-    # Define the decoder model separately.
+    encoder_model = Model(inputs=encoder_inputs, outputs=[encoder_outputs_2,encoder_states]) # for Luong attention
+    #encoder_model = Model(inputs=encoder_inputs, outputs=encoder_states) # defualt enc-dec encoder
+
     decoder_state_input_h = Input(shape=(hidden_size,))
     decoder_state_input_c = Input(shape=(hidden_size,))
-    #decoder_state_input_h, decoder_state_input_c comes from encoder lstm layer 2 output
-    decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
-    
-    # only initial state uses encoder lstm layer 2 outputs
-    decoder_outputs, state_h, state_c = decoder_lstm(
-        decoder_inputs, initial_state=decoder_states_inputs)
-    decoder_states = [state_h, state_c]
-    decoder_outputs = decoder_softmax(decoder_outputs)
-    
-    # total inputs to decoder = decoder_inputs + encoder_lstm_layer_2_outputs
-    decoder_model = Model(inputs=[decoder_inputs] + decoder_states_inputs,
-                          outputs=[decoder_outputs] + decoder_states)
+    encoder_outputs_input = Input(shape=(None,hidden_size,))
+
+    """
+    Task 2 decoder for inference
+
+    Start
+    """
+    decoder_states_input = [decoder_state_input_h, decoder_state_input_c]
+    decoder_outputs_test,decoder_state_output_h,decoder_state_output_c = decoder_lstm(decoder_inputs,initial_state=decoder_states_input)
+    decoder_states_output = [decoder_state_output_h, decoder_state_output_c]
+    decoder_attention = AttentionLayer()
+    decoder_outputs_test = decoder_attention([encoder_outputs_input,decoder_outputs_test])
+
+    decoder_outputs_test = decoder_softmax(decoder_outputs_test)
+
+    """
+    End Task 2
+    """
+
+    decoder_model = Model([decoder_inputs,decoder_state_input_h,decoder_state_input_c,encoder_outputs_input],
+                          [decoder_outputs_test,decoder_state_output_h,decoder_state_output_c])
+    #decoder_model = Model(inputs=[decoder_inputs] + decoder_states_input,
+    #                      outputs=[decoder_outputs_test] + decoder_states_output)
+
+    ####################################################################
+    # Define the decoder model separately.
+#    decoder_state_input_h = Input(shape=(hidden_size,))
+#    decoder_state_input_c = Input(shape=(hidden_size,))
+#    #decoder_state_input_h, decoder_state_input_c comes from encoder lstm layer 2 output
+#    decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
+#    
+#    # only initial state uses encoder lstm layer 2 outputs
+#    decoder_outputs, state_h, state_c = decoder_lstm(
+#        decoder_inputs, initial_state=decoder_states_inputs)
+#    decoder_states = [state_h, state_c]
+#    decoder_outputs = decoder_softmax(decoder_outputs)
+#    
+#    # total inputs to decoder = decoder_inputs + encoder_lstm_layer_2_outputs
+#    decoder_model = Model(inputs=[decoder_inputs] + decoder_states_inputs,
+#                          outputs=[decoder_outputs] + decoder_states)
     #####################################################################################
     return model, encoder_model, decoder_model
