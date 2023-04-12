@@ -9,7 +9,7 @@ from utils import batch, datagen, decode_sequences, datagen_bahdanau
 #from utils import read_text, tokenize
 from utils import restore_model
 from model_attention import seq2seq
-from model_attention_2 import seq2seq_bahdanau
+#from model_attention_2 import seq2seq_bahdanau
 #from model_attention import seq2seq 
 from utils import transform2, get_type_lists
 
@@ -69,7 +69,7 @@ print(model.summary())
 maxlen = max([len(token) for token in train_tokens]) + 2
 
 # Train and evaluate.
-for epoch in range(model_cnt,1):
+for epoch in range(model_cnt,100):
     print('Main Epoch {:d}/{:d}'.format(epoch + 1, nb_epochs))
 
     #train_encoder, train_decoder, train_target = transform(

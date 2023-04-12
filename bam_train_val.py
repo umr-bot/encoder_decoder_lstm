@@ -9,6 +9,7 @@ from utils import batch, datagen, decode_sequences
 #from utils import read_text, tokenize
 from utils import restore_model
 from model import seq2seq
+from model_attention import seq2seq as seq2seq_attention
 #from model_attention import seq2seq 
 from utils import transform2, get_type_lists
 
@@ -27,13 +28,21 @@ sample_mode = 'argmax'
 # https://arxiv.org/abs/1409.3215
 reverse = True
 
+import argparse
+
+parser = argparse.ArgumentParser(description="Encoder decoder training script")
+parser.add_argument("--foldset",help="fold set to use")
+parser.add_argument("--use_attention",help="set to 'T' to use Luong attention")
+args = parser.parse_args()
+
+fold_num=args.foldset
 # extract training tokens
 # train_dec_tokens are targets and train_tokens inputs
-with open("bam_v2/folds/fold1/train") as f:
+with open("bam_v2/folds/fold"+str(fold_num)+"/train") as f:
     train_tups = [line.strip('\n').split(',') for line in f]
 train_dec_tokens, train_tokens = zip(*train_tups)
 
-with open("bam_v2/folds/fold1/val") as f:
+with open("bam_v2/folds/fold"+str(fold_num)+"/val") as f:
     val_tups = [line.strip('\n').split(',') for line in f]
 val_dec_tokens, val_tokens = zip(*val_tups)
 
@@ -50,17 +59,9 @@ val_steps = len(val_tokens) // val_batch_size
 print("Number of train_steps:",train_steps)
 print("Number of val_steps:",val_steps)
 
-#copy_val_tokens,copy_val_dec_tokens=[],[]
-##chrs = input_chars.union(target_chars)
-#for i in range(len(val_tokens)):
-#    tok,dec_tok = val_tokens[i], val_dec_tokens[i]
-#    if set(tok).issubset(input_chars) and set(dec_tok).issubset(target_chars):
-#        copy_val_tokens.append(tok)
-#        copy_val_dec_tokens.append(dec_tok)
-#val_tokens, val_dec_tokens = copy_val_tokens,copy_val_dec_tokens
-
 # Compile the model.
-model, encoder_model, decoder_model = seq2seq(hidden_size, nb_input_chars, nb_target_chars)
+if args.use_attention=="T": model, encoder_model, decoder_model = seq2seq_attention(hidden_size, nb_input_chars, nb_target_chars)
+else: model, encoder_model, decoder_model = seq2seq(hidden_size, nb_input_chars, nb_target_chars)
 model_cnt=0
 #model, encoder_model, decoder_model = restore_model("checkpoints/seq2seq_epoch_"+str(model_cnt)+".h5",hidden_size)
 print(model.summary())
@@ -103,27 +104,28 @@ for epoch in range(model_cnt,100):
 
    # On epoch end - decode a batch of misspelled tokens from the
    # validation set to visualize speller performance.
-    nb_tokens = 5
-    input_tokens, target_tokens, decoded_tokens = decode_sequences(
-        val_encoder, val_target, input_ctable, target_ctable,
-        maxlen, reverse, encoder_model, decoder_model, nb_tokens,
-        sample_mode=sample_mode, random=False)
-    
-    print('-')
-    print('Input tokens:  ', input_tokens)
-    print('Decoded tokens:', decoded_tokens)
-    print('Target tokens: ', target_tokens)
-    print('-')
+#    nb_tokens = 5
+#    input_tokens, target_tokens, decoded_tokens = decode_sequences(
+#        val_encoder, val_target, input_ctable, target_ctable,
+#        maxlen, reverse, encoder_model, decoder_model, nb_tokens,
+#        sample_mode=sample_mode, random=False)
+#    
+#    print('-')
+#    print('Input tokens:  ', input_tokens)
+#    print('Decoded tokens:', decoded_tokens)
+#    print('Target tokens: ', target_tokens)
+#    print('-')
 
     # Save the model at end of each epoch.
     model_file = '_'.join(['seq2seq', 'epoch', str(epoch + 1)]) + '.h5'
-    save_dir = 'bam_v2_checkpoints_fold1'
+    if args.use_attention=='T': save_dir = 'luong_bam_v2_checkpoints_fold' + str(fold_num)
+    else: save_dir = 'bam_v2_checkpoints_fold' + str(fold_num)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_path = os.path.join(save_dir, model_file)
     print('Saving full model to {:s}'.format(save_path))
     model.save(save_path)
-    fn = 'history_with_trunc.txt'
+    fn = save_dir+"/history.txt"
     #for history in score:
     with open(fn,'a') as f:
         f.write(str(history.history['loss'][0]) + ',')
