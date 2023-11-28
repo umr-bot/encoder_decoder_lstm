@@ -1,89 +1,121 @@
+# coding: utf-8
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+# NOTE: log levels for tensorflow
+# 0 = all messages are logged (default behavior)
+# 1 = INFO messages are not printed
+# 2 = INFO and WARNING messages are not printed
+# 3 = INFO, WARNING, and ERROR messages are not printed
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+from tensorflow.keras.models import Model, load_model
+from tqdm import tqdm
+from model import precision,recall,f1_score
+from utils import CharacterTable, transform2, decode_sequences, restore_model
+import argparse
 
-from utils import CharacterTable, transform
-from utils import restore_model, decode_sequences
-from utils import read_text, tokenize
-from utils import transform2
+parser = argparse.ArgumentParser(description="Logistic regression training script")
+parser.add_argument("--hidden_size", default=128, help="hidden layer1 size")
+#parser.add_argument("--train_batch_size", default=10, help="train batch size")
+#parser.add_argument("--val_batch_size", default=100, help="val batch size")
+#parser.add_argument("--num_epochs", default=20, help="number of epochs")
+parser.add_argument("--foldset_num", default=1, help="foldset number to use")
+parser.add_argument("--checkpoints_dir", default="eng_checkpoints", help="directory in which to save checkpoints")
+parser.add_argument("--data_dir",help="path to unigrams")
+#parser.add_argument("--lang",help="language being trained on")
+parser.add_argument("--model_num",help="which model version is being evaluated on")
+parser.add_argument("--use_bigrams", default="false", help="boolean which selects whether to load unigram or bigram data")
+parser.add_argument("--use_trigrams", default="false", help="boolean which selects whether to load trigram data")
 
-#error_rate = 0.6
-reverse = True
-model_path = './checkpoints_eng_3_word_types/seq2seq_epoch_32.h5'
-#model_path = './checkpoints/seq2seq_epoch_32.h5'
-hidden_size = 512
+args = parser.parse_args()
+args.hidden_size=int(args.hidden_size)
+#assert(len(int(args.val_batch_size)) < len(int(args.)))
+
 sample_mode = 'argmax'
-#data_path = './data'
-#books = ['nietzsche.txt', 'pride_and_prejudice.txt', 'shakespeare.txt', 'war_and_peace.txt']
 
-#test_sentence = 'The rabbit-hole went straight on like a tunnel for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself before she found herself falling down a very deep well.'
+# Load data
+if args.use_bigrams=="false":
+    with open(args.data_dir+"/foldset"+str(args.foldset_num)+"/train") as f:
+        train_tups = [line.strip('\n').split(',') for line in f]
+    train_dec_tokens, train_tokens = zip(*train_tups)
+    with open(args.data_dir+"/foldset"+str(args.foldset_num)+"/val") as f:
+        val_tups = [line.strip('\n').split(',') for line in f]
+    val_dec_tokens, val_tokens = zip(*val_tups)
+elif args.use_bigrams == "right" or args.use_bigrams == "left":
+    # selects bigram (n=2) or trigram (n=3)
+    if args.use_bigrams == "left": m,n=0,2 # left bigram (m=0,n=2)
+    else: m,n=-2,3 # right bigram (m=-2,n=3)
+    with open(args.data_dir+"/foldset"+str(args.foldset_num)+"/train") as f:
+        train_tokens = [" ".join(line.strip('\n').split()[m:n]) for line in f]
+    with open(args.data_dir+"/norm_foldset"+str(args.foldset_num)+"/train") as f:
+        train_dec_tokens = [" ".join(line.strip('\n').split()[m:n]) for line in f]
 
+    with open(args.data_dir+"/foldset"+str(args.foldset_num)+"/val") as f:
+        val_tokens = [" ".join(line.strip('\n').split()[m:n]) for line in f]
+    with open(args.data_dir+"/norm_foldset"+str(args.foldset_num)+"/val") as f:
+        val_dec_tokens = [" ".join(line.strip('\n').split()[m:n]) for line in f]
 
-#if __name__ == '__main__':
-#text  = read_text(data_path, books)
-#vocab = tokenize(text)
-#vocab = list(filter(None, set(vocab)))
-## `maxlen` is the length of the longest word in the vocabulary
-## plus two SOS and EOS characters.
-#maxlen = max([len(token) for token in vocab]) + 2
-#train_encoder, train_decoder, train_target = transform(
-#    vocab, maxlen, error_rate=error_rate, shuffle=False)
-#
-#tokens = tokenize(test_sentence)
-#tokens = list(filter(None, tokens))
-#nb_tokens = len(tokens)
-#misspelled_tokens, _, target_tokens = transform(
-#    tokens, maxlen, error_rate=error_rate, shuffle=False)
-#
-#input_chars = set(' '.join(train_encoder))
-#target_chars = set(' '.join(train_decoder))
-#input_ctable = CharacterTable(input_chars)
-#target_ctable = CharacterTable(target_chars)
-#base_dir = "data/folds/"
-base_dir = "eng_data/kfolds/folds/"
-#norm_base_dir = "data/norm_folds/"
-norm_base_dir = "eng_data/kfolds/norm_folds/"
+elif args.use_trigrams == "True":
+    # selects bigram (n=2) or trigram (n=3)
+    n=3
+    with open(args.data_dir+"/foldset"+str(args.foldset_num)+"/train") as f:
+        train_tokens = [" ".join(line.strip('\n').split()[:n]) for line in f]
+    with open(args.data_dir+"/norm_foldset"+str(args.foldset_num)+"/train") as f:
+        train_dec_tokens = [" ".join(line.strip('\n').split()[:n]) for line in f]
 
-# extract training tokens
-with open(base_dir + "train") as f: train_tokens = [tok for line in f for tok in line.split()]
-with open(norm_base_dir + "train") as f: train_dec_tokens = [tok for line in f for tok in line.split()]
-# `maxlen` is the length of the longest word in the vocabulary
-# plus two SOS and EOS characters.
-maxlen = max([len(token) for token in train_tokens]) + 2
-#transform2(train_tokens, maxlen, shuffle=False, dec_tokens=train_dec_tokens)
+    with open(args.data_dir+"/foldset"+str(args.foldset_num)+"/val") as f:
+        val_tokens = [" ".join(line.strip('\n').split()[:n]) for line in f]
+    with open(args.data_dir+"/norm_foldset"+str(args.foldset_num)+"/val") as f:
+        val_dec_tokens = [" ".join(line.strip('\n').split()[:n]) for line in f]
 
-# extract test tokens
-with open(base_dir+"fold5") as f: test_tokens = [tok for line in f for tok in line.split()]
-with open(norm_base_dir+"fold5") as f: test_target_tokens = [tok for line in f for tok in line.split()]
-#transform2(test_tokens, maxlen, shuffle=False, dec_tokens=test_target_tokens)
+else: print("ERROR: data not loaded")
 
-#tokens = tokenize(test_sentence)
-#tokens = list(filter(None, tokens))
-#nb_tokens = len(tokens)
-#misspelled_tokens, _, target_tokens = transform(
-#    tokens, maxlen, error_rate=error_rate, shuffle=False)
-assert(len(test_tokens) == len(test_target_tokens))
+#    with open(+"/foldset"+str(args.foldset_num)+"/val") as f:
+#        val_tups = [line.strip('\n').split(',') for line in f]
+#    val_dec_tokens, val_tokens = zip(*val_tups)
 
 input_chars = set(' '.join(train_tokens) + '*' + '\t') # * and \t are EOS and SOS respectively
 target_chars = set(' '.join(train_dec_tokens) + '*' + '\t')
-nb_input_chars = len(input_chars)
-nb_target_chars = len(target_chars)
-# Define training and evaluation configuration.
-input_ctable  = CharacterTable(input_chars)
-target_ctable = CharacterTable(target_chars)
+total_chars = input_chars.union(target_chars)
+nb_total_chars = len(total_chars)
+#input_ctable = CharacterTable(total_chars)
+#target_ctable = CharacterTable(target_chars)
+total_ctable = input_ctable = target_ctable = CharacterTable(total_chars)
+maxlen = max([len(token) for token in train_tokens]) + 2
+#########################################################################################
 
-_ , encoder_model, decoder_model = restore_model(model_path, hidden_size)
-start_index = 10
-nb_tokens = 20#len(test_tokens)
+# Load model
+custom_objects = { 'recall': recall, "precision": precision, "f1_score": f1_score}
+root_dir=args.checkpoints_dir+'/fold' + str(args.foldset_num)+'_hdd_'+str(args.hidden_size)
+#model, encoder_model, decoder_model = load_model( root_dir + "/seq2seq_epoch_"+args.model_num+".h5",custom_objects=custom_objects)
+model, encoder_model, decoder_model = restore_model(root_dir + "/seq2seq_epoch_"+args.model_num+".h5", args.hidden_size, compile_flag=False)
 
-input_tokens, target_tokens, decoded_tokens = decode_sequences(
-        test_tokens[start_index:nb_tokens], test_target_tokens[start_index:nb_tokens], input_ctable,
-        target_ctable, 
-        maxlen, reverse, encoder_model, decoder_model, nb_tokens-start_index,
-        sample_mode=sample_mode, random=False)
+#########################################################################################
 
-print('-')
-print('Input sentence:  ', ' '.join([token for token in input_tokens]))
-print('-')
-print('Decoded sentence:', ' '.join([token for token in decoded_tokens]))
-print('-')
-print('Target sentence: ', ' '.join([token for token in target_tokens]))
+val_x, val_y_pred,val_y_true=[],[],[]
+val_x_padded, val_y_padded, val_y_true_padded = transform2( val_tokens, maxlen, shuffle=False, dec_tokens=val_dec_tokens)
+# when batch_size=1 loads 1 sample at a time
+#val_X_iter = batch(val_x_padded,maxlen=maxlen,ctable=total_ctable,batch_size=batch_size,reverse=False)
+#val_y_iter = batch(val_y_padded,maxlen=maxlen,ctable=total_ctable,batch_size=batch_size,reverse=False)
+#val_y_true_iter = batch(val_y_true_padded,maxlen=maxlen,ctable=total_ctable,batch_size=batch_size,reverse=False)
+
+#val_loader = datagen(val_X_iter, val_y_iter, val_y_true_iter)
+
+batch_size=10
+for batch_cnt in tqdm(range(0, len(val_tokens)-batch_size, batch_size),desc="Inference in progress"):
+    val_x_temp, val_y_true_temp, val_y_pred_temp = decode_sequences(
+        val_x_padded[batch_cnt:batch_cnt+batch_size], val_y_true_padded[batch_cnt:batch_cnt+batch_size], input_ctable=total_ctable, target_ctable=total_ctable,
+        maxlen=maxlen, encoder_model=encoder_model, decoder_model=decoder_model, nb_examples=batch_size,
+        sample_mode=sample_mode,reverse=False, random=False)
+    val_x += val_x_temp
+    val_y_pred += val_y_pred_temp
+    val_y_true += val_y_true_temp
+
+save_dir = root_dir+"/model_"+args.model_num
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+with open(save_dir+"/err_file",'w') as f:
+    for word in val_x: f.write(word+'\n')
+with open(save_dir+"/cln_file",'w')as f:
+    for word in val_y_pred: f.write(word+'\n')
+with open(save_dir+"/tar_file",'w') as f:
+    for word in val_y_true: f.write(word+'\n')
+
